@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "774132737169",
+    "project_id": "smartcare-tubesltka",
+    "storage_bucket": "smartcare-tubesltka.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:774132737169:android:617636d9be33a18595cb30",
+        "android_client_info": {
+          "package_name": "com.example.smartcare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5sE7y5xk6wmu46B5KwWdrQihrZeWMwug"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:774132737169:android:33f53ce812b4d46395cb30",
+        "android_client_info": {
+          "package_name": "com.smartcare.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5sE7y5xk6wmu46B5KwWdrQihrZeWMwug"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:774132737169:android:7c67dc0ab313d51b95cb30",
+        "android_client_info": {
+          "package_name": "com.smartcare.app.smartcare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5sE7y5xk6wmu46B5KwWdrQihrZeWMwug"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
