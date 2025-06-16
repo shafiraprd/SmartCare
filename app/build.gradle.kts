@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.firebase.messaging.ktx)
 
     // Dependensi untuk testing
     testImplementation(libs.junit)

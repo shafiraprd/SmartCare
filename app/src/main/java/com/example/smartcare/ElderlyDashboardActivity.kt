@@ -8,6 +8,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +31,11 @@ class ElderlyDashboardActivity : AppCompatActivity() {
     private val auth = Firebase.auth
     private lateinit var taskAdapter: TaskAdapter
     private lateinit var alarmManager: AlarmManager
+
+    // Handler dan Runnable untuk refresh otomatis
+    private val handler = Handler(Looper.getMainLooper())
+    private lateinit var refreshRunnable: Runnable
+    private val REFRESH_INTERVAL_MS = 60000L // Refresh setiap 60 detik (1 menit)
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -66,6 +73,32 @@ class ElderlyDashboardActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Mulai refresh otomatis saat halaman aktif
+        setupAutoRefresh()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Hentikan refresh otomatis saat halaman tidak aktif untuk hemat baterai
+        handler.removeCallbacks(refreshRunnable)
+    }
+
+    private fun setupAutoRefresh() {
+        refreshRunnable = Runnable {
+            Log.d("AutoRefreshChecker", "Handler berjalan, me-refresh UI pada: ${Date()}")
+            // Memberitahu adapter untuk menggambar ulang semua item yang terlihat
+            if (::taskAdapter.isInitialized) {
+                taskAdapter.notifyDataSetChanged()
+            }
+            // Jadwalkan refresh berikutnya
+            handler.postDelayed(refreshRunnable, REFRESH_INTERVAL_MS)
+        }
+        // Langsung jalankan untuk pertama kali
+        handler.post(refreshRunnable)
+    }
+
     private fun listenForTaskUpdates() {
         val currentUser = auth.currentUser ?: return
         db.collection("tasks")
@@ -86,7 +119,6 @@ class ElderlyDashboardActivity : AppCompatActivity() {
 
     private fun scheduleAlarmsForTasks(tasks: List<Task>) {
         for (task in tasks) {
-            // Hanya jadwalkan alarm untuk tugas yang belum selesai, punya waktu, dan waktunya di masa depan
             if (!task.isCompleted && task.reminderTime != null && task.reminderTime!!.toDate().after(Date())) {
                 scheduleAlarm(task)
             }
@@ -107,13 +139,9 @@ class ElderlyDashboardActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (alarmManager.canScheduleExactAlarms()) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, task.reminderTime!!.toDate().time, pendingIntent)
-                Log.d("AlarmScheduler", "Alarm diset untuk: ${task.title}")
-            } else {
-                Log.w("AlarmScheduler", "Tidak ada izin untuk menjadwalkan alarm yang presisi.")
             }
         } else {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, task.reminderTime!!.toDate().time, pendingIntent)
-            Log.d("AlarmScheduler", "Alarm diset untuk: ${task.title}")
         }
     }
 
@@ -124,7 +152,6 @@ class ElderlyDashboardActivity : AppCompatActivity() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         alarmManager.cancel(pendingIntent)
-        Log.d("AlarmScheduler", "Alarm dibatalkan untuk: ${task.title}")
     }
 
     private fun markTaskAsCompleted(task: Task) {
