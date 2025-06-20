@@ -4,102 +4,106 @@ import android.graphics.Paint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
-import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 class TaskAdapter(
-    private val taskList: MutableList<Task>,
-    private val role: String,
+    private val tasks: MutableList<Task>,
+    private val userRole: String,
     private val onItemClick: (Task) -> Unit,
     private val onEditClick: (Task) -> Unit,
     private val onDeleteClick: (Task) -> Unit
 ) : RecyclerView.Adapter<TaskAdapter.TaskViewHolder>() {
 
     class TaskViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val title: TextView = itemView.findViewById(R.id.tvTaskTitle)
-        val status: TextView = itemView.findViewById(R.id.tvTaskStatus)
-        val editButton: ImageView = itemView.findViewById(R.id.ivEditTask)
-        val deleteButton: ImageView = itemView.findViewById(R.id.ivDeleteTask)
+        val ivTaskIcon: ImageView = itemView.findViewById(R.id.iv_task_icon)
+        val tvTaskTitle: TextView = itemView.findViewById(R.id.tv_task_title)
+        val tvTaskStatus: TextView = itemView.findViewById(R.id.tv_task_status)
+        val cbTaskDone: CheckBox = itemView.findViewById(R.id.cb_task_done)
+        val ivEditTask: ImageButton = itemView.findViewById(R.id.iv_edit_task)
+        val ivDeleteTask: ImageButton = itemView.findViewById(R.id.iv_delete_task)
+        val tvTaskReminderTime: TextView = itemView.findViewById(R.id.tv_task_reminder_time)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TaskViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_task, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_task, parent, false)
         return TaskViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: TaskViewHolder, position: Int) {
-        val task = taskList[position]
-        holder.title.text = task.title
+        val task = tasks[position]
+        holder.tvTaskTitle.text = task.title
+        holder.tvTaskStatus.text = "Status: ${task.status}"
 
-        // ▼▼▼ PERBAIKAN 1: MENAMPILKAN WAKTU YANG BENAR ▼▼▼
-        // Cek apakah ada waktu pengingat yang diatur
-        if (task.reminderTime != null) {
-            val sdf = SimpleDateFormat("dd MMMM yyyy, HH:mm", Locale.getDefault())
-            val formattedDate = sdf.format(task.reminderTime!!.toDate())
-            holder.status.text = "Jadwal: $formattedDate"
-        } else {
-            // Jika tidak ada, tampilkan waktu dibuat
-            val sdf = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
-            val formattedDate = sdf.format(task.createdAt.toDate())
-            holder.status.text = "Dibuat pada: $formattedDate"
+        val taskTitleLower = task.title.lowercase(Locale.ROOT)
+        val iconResId = when {
+            "obat" in taskTitleLower -> R.drawable.ic_task_medication
+            "makan" in taskTitleLower -> R.drawable.ic_task_food
+            "dokter" in taskTitleLower || "janji" in taskTitleLower || "kontrol" in taskTitleLower -> R.drawable.ic_task_doctor
+            "aktivitas" in taskTitleLower || "jalan" in taskTitleLower || "olahraga" in taskTitleLower -> R.drawable.ic_task_activity
+            else -> R.drawable.ic_task_default
+        }
+        holder.ivTaskIcon.setImageResource(iconResId)
+
+        task.reminderTime?.let { timestamp ->
+            val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+            holder.tvTaskReminderTime.text = "Pengingat: ${sdf.format(timestamp.toDate())}"
+            holder.tvTaskReminderTime.visibility = View.VISIBLE
+        } ?: run {
+            holder.tvTaskReminderTime.visibility = View.GONE
         }
 
-        if (task.isCompleted) {
-            holder.status.text = "Status: Selesai"
-            holder.title.paintFlags = holder.title.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+        if (userRole == "family") {
+            holder.cbTaskDone.visibility = View.GONE
+            holder.ivEditTask.visibility = View.VISIBLE
+            holder.ivDeleteTask.visibility = View.VISIBLE
         } else {
-            holder.title.paintFlags = holder.title.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            holder.cbTaskDone.visibility = View.VISIBLE
+            holder.ivEditTask.visibility = View.GONE
+            holder.ivDeleteTask.visibility = View.GONE
+            holder.tvTaskTitle.textSize = 20f
+            holder.tvTaskReminderTime.textSize = 16f
+            holder.tvTaskStatus.textSize = 16f
+            holder.cbTaskDone.textSize = 18f
         }
 
-        // ▼▼▼ PERBAIKAN 2 & 3: LOGIKA UNTUK TUGAS MASA DEPAN ▼▼▼
-        val now = Date()
-        // Cek apakah tugas ini dijadwalkan untuk masa depan
-        val isFutureTask = task.reminderTime != null && task.reminderTime!!.toDate().after(now)
-
-        // Beri efek visual jika tugas belum bisa dikerjakan
-        if (isFutureTask && !task.isCompleted && role == "lansia") {
-            holder.itemView.alpha = 0.5f // Membuatnya terlihat redup
+        if (task.status == "completed") {
+            holder.tvTaskTitle.paintFlags = holder.tvTaskTitle.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            holder.tvTaskTitle.alpha = 0.5f
         } else {
-            holder.itemView.alpha = 1.0f // Tampilan normal
+            holder.tvTaskTitle.paintFlags = holder.tvTaskTitle.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            holder.tvTaskTitle.alpha = 1.0f
         }
 
-        holder.itemView.setOnClickListener {
-            if (role == "lansia" && !task.isCompleted) {
-                // Lansia hanya bisa menyelesaikan tugas jika waktunya sudah tiba
-                if (!isFutureTask) {
+        holder.cbTaskDone.isChecked = task.status == "completed"
+
+        holder.itemView.setOnClickListener { onItemClick(task) }
+        holder.ivEditTask.setOnClickListener { onEditClick(task) }
+        holder.ivDeleteTask.setOnClickListener { onDeleteClick(task) }
+
+        holder.cbTaskDone.setOnCheckedChangeListener(null)
+        holder.cbTaskDone.setOnClickListener {
+            if (userRole == "elderly") {
+                val newStatus = if (holder.cbTaskDone.isChecked) "completed" else "pending"
+                if (task.status != newStatus) {
+                    task.status = newStatus
                     onItemClick(task)
-                } else {
-                    Toast.makeText(holder.itemView.context, "Tugas ini belum bisa diselesaikan.", Toast.LENGTH_SHORT).show()
                 }
             }
         }
-
-        // Logika untuk menampilkan tombol edit dan hapus (tetap sama)
-        if (role == "keluarga") {
-            holder.editButton.visibility = View.VISIBLE
-            holder.deleteButton.visibility = View.VISIBLE
-            holder.editButton.setOnClickListener { onEditClick(task) }
-            holder.deleteButton.setOnClickListener { onDeleteClick(task) }
-        } else {
-            holder.editButton.visibility = View.GONE
-            holder.deleteButton.visibility = View.GONE
-        }
     }
 
-    override fun getItemCount(): Int {
-        return taskList.size
-    }
+    override fun getItemCount(): Int = tasks.size
 
+    // BARU: Fungsi untuk memperbarui daftar tugas di adapter
     fun updateTasks(newTasks: List<Task>) {
-        taskList.clear()
-        taskList.addAll(newTasks)
+        tasks.clear()
+        tasks.addAll(newTasks)
         notifyDataSetChanged()
     }
 }

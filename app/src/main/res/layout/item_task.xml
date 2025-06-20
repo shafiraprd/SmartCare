@@ -1,60 +1,105 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp"
-    android:layout_marginBottom="8dp"
-    android:background="@drawable/border_background">
+    android:layout_marginStart="8dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginEnd="8dp"
+    android:layout_marginBottom="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_toStartOf="@+id/actionsLayout"
-        android:layout_centerVertical="true"
-        android:layout_marginEnd="16dp">
-
-        <TextView
-            android:id="@+id/tvTaskTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Judul Tugas"
-            android:textSize="18sp"
-            android:textColor="@android:color/black"
-            android:textStyle="bold"/>
-
-        <TextView
-            android:id="@+id/tvTaskStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Status: Belum Selesai"
-            android:layout_marginTop="4dp"
-            android:textSize="14sp"/>
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/actionsLayout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_alignParentEnd="true"
-        android:layout_centerVertical="true">
+        android:padding="16dp">
 
         <ImageView
-            android:id="@+id/ivEditTask"
+            android:id="@+id/iv_task_icon"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_edit"
-            android:padding="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:visibility="gone"/> <ImageView
-        android:id="@+id/ivDeleteTask"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:src="@android:drawable/ic_menu_delete"
-        android:layout_marginStart="8dp"
-        android:padding="8dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:visibility="gone"/> </LinearLayout>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:src="@drawable/ic_task_default" />
 
-</RelativeLayout>
+        <TextView
+            android:id="@+id/tv_task_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="Judul Tugas"
+            android:textColor="@android:color/black"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@id/iv_task_icon"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/iv_edit_task"
+            android:layout_marginEnd="16dp"/>
+
+        <TextView
+            android:id="@+id/tv_task_reminder_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:drawablePadding="4dp"
+            android:gravity="center_vertical"
+            android:text="Pengingat: 08:00"
+            android:textColor="@color/design_default_color_primary"
+            android:textSize="14sp"
+            android:textStyle="italic"
+            android:visibility="gone"
+            app:drawableStartCompat="@android:drawable/ic_lock_idle_alarm"
+            app:layout_constraintStart_toStartOf="@id/tv_task_title"
+            app:layout_constraintTop_toBottomOf="@id/tv_task_title" />
+
+        <TextView
+            android:id="@+id/tv_task_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Status: Pending"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp"
+            app:layout_constraintStart_toStartOf="@id/tv_task_title"
+            app:layout_constraintTop_toBottomOf="@id/tv_task_reminder_time" />
+
+        <CheckBox
+            android:id="@+id/cb_task_done"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Selesai"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <ImageButton
+            android:id="@+id/iv_edit_task"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_edit"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Edit Tugas"
+            android:visibility="gone"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintEnd_toStartOf="@id/iv_delete_task"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <ImageButton
+            android:id="@+id/iv_delete_task"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_delete"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Hapus Tugas"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

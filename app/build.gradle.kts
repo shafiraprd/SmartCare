@@ -1,5 +1,3 @@
-// Path: app/build.gradle.kts
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -35,7 +33,6 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
-    // Hanya mengaktifkan ViewBinding, bukan Compose
     buildFeatures {
         viewBinding = true
     }
@@ -48,13 +45,15 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.constraintlayout) // Dipindahkan ke atas untuk kerapian
 
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
-    implementation(libs.androidx.constraintlayout)
     implementation(libs.firebase.messaging.ktx)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
 
     // Dependensi untuk testing
     testImplementation(libs.junit)

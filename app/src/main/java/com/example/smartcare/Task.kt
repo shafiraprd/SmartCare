@@ -1,35 +1,18 @@
 package com.example.smartcare
 
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.DocumentId
-import com.google.firebase.firestore.PropertyName
+import com.google.firebase.firestore.ServerTimestamp
 
 data class Task(
-    @DocumentId
-    val id: String = "",
-
-    @get:PropertyName("title")
-    @set:PropertyName("title")
+    var id: String = "",
     var title: String = "",
-
-    @get:PropertyName("createdBy")
-    @set:PropertyName("createdBy")
     var createdBy: String = "",
-
-    @get:PropertyName("assignedTo")
-    @set:PropertyName("assignedTo")
     var assignedTo: String = "",
-
-    @get:PropertyName("isCompleted")
-    @set:PropertyName("isCompleted")
-    var isCompleted: Boolean = false,
-
-    @get:PropertyName("createdAt")
-    @set:PropertyName("createdAt")
-    var createdAt: Timestamp = Timestamp.now(),
-
-    // ▼▼▼ FIELD BARU UNTUK WAKTU PENGINGAT ▼▼▼
-    @get:PropertyName("reminderTime")
-    @set:PropertyName("reminderTime")
-    var reminderTime: Timestamp? = null // Nullable, karena tidak semua tugas punya pengingat
+    @ServerTimestamp
+    var createdAt: Timestamp? = null,
+    var reminderTime: Timestamp? = null,
+    var status: String = "pending",
+    // BARU: Tambahkan properti untuk aturan pengulangan
+    // Nilai bisa "none", "daily"
+    var recurrence: String = "none"
 )

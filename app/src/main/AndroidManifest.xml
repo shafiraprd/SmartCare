@@ -16,8 +16,22 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartCare"
         tools:targetApi="31">
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
-        <receiver android:name=".AlarmReceiver" android:enabled="true"/>
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".AlarmReceiver"
+            android:enabled="true" />
 
         <service
             android:name=".MyFirebaseMessagingService"
@@ -26,15 +40,16 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <activity
+            android:name=".GetStartedActivity"
+            android:exported="false" />
         <activity
             android:name=".LoginActivity"
-            android:exported="true"
-            android:theme="@style/Theme.SmartCare">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="false" />
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="false" />
@@ -43,8 +58,8 @@
             android:exported="false" />
         <activity
             android:name=".ElderlyDashboardActivity"
-            android:exported="false" />
-
+            android:exported="false"
+            android:launchMode="singleTop" />
     </application>
 
 </manifest>

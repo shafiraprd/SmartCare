@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/white"
-    tools:context=".LoginActivity">
+    tools:context=".RegisterActivity">
 
     <ImageView
         android:id="@+id/iv_background_blob"
@@ -24,7 +24,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginTop="80dp"
-        android:text="Welcome\nBack"
+        android:text="Sign Up"
         android:textColor="@android:color/black"
         android:textSize="40sp"
         android:textStyle="bold"
@@ -32,7 +32,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/til_email"
+        android:id="@+id/til_email_register"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -46,7 +46,7 @@
         app:layout_constraintVertical_bias="0.45">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etEmail"
+            android:id="@+id/et_email_register"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textEmailAddress" />
@@ -54,19 +54,19 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/til_password"
+        android:id="@+id/til_password_register"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:hint="Password"
-        app:layout_constraintEnd_toEndOf="@id/til_email"
-        app:layout_constraintStart_toStartOf="@id/til_email"
-        app:layout_constraintTop_toBottomOf="@id/til_email"
+        app:layout_constraintEnd_toEndOf="@id/til_email_register"
+        app:layout_constraintStart_toStartOf="@id/til_email_register"
+        app:layout_constraintTop_toBottomOf="@id/til_email_register"
         app:passwordToggleEnabled="true">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etPassword"
+            android:id="@+id/et_password_register"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textPassword" />
@@ -74,31 +74,31 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <TextView
-        android:id="@+id/tv_role_label"
+        android:id="@+id/tv_role_label_register"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Login sebagai:"
-        app:layout_constraintStart_toStartOf="@id/til_password"
-        app:layout_constraintTop_toBottomOf="@id/til_password" />
+        android:text="Daftar sebagai:"
+        app:layout_constraintStart_toStartOf="@id/til_password_register"
+        app:layout_constraintTop_toBottomOf="@id/til_password_register" />
 
     <RadioGroup
-        android:id="@+id/radio_group_role_login"
+        android:id="@+id/radio_group_role_register"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="@id/til_password"
-        app:layout_constraintStart_toStartOf="@id/til_password"
-        app:layout_constraintTop_toBottomOf="@id/tv_role_label">
+        app:layout_constraintEnd_toEndOf="@id/til_password_register"
+        app:layout_constraintStart_toStartOf="@id/til_password_register"
+        app:layout_constraintTop_toBottomOf="@id/tv_role_label_register">
 
         <RadioButton
-            android:id="@+id/radio_button_family_login"
+            android:id="@+id/radio_button_family_register"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Keluarga" />
 
         <RadioButton
-            android:id="@+id/radio_button_elderly_login"
+            android:id="@+id/radio_button_elderly_register"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -106,27 +106,27 @@
     </RadioGroup>
 
     <Button
-        android:id="@+id/btn_login"
+        android:id="@+id/btn_register"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
         android:backgroundTint="#7cb3fc"
         android:paddingVertical="14dp"
-        android:text="SIGN IN"
+        android:text="SIGN UP"
         android:textSize="16sp"
-        app:layout_constraintEnd_toEndOf="@id/til_password"
-        app:layout_constraintStart_toStartOf="@id/til_password"
-        app:layout_constraintTop_toBottomOf="@id/radio_group_role_login" />
+        app:layout_constraintEnd_toEndOf="@id/til_password_register"
+        app:layout_constraintStart_toStartOf="@id/til_password_register"
+        app:layout_constraintTop_toBottomOf="@id/radio_group_role_register" />
 
     <TextView
-        android:id="@+id/tv_go_to_register"
+        android:id="@+id/tv_go_to_login"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Don't have an account? Sign Up"
+        android:text="Already have an account? Sign In"
         android:textColor="#7cb3fc"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_login" />
+        app:layout_constraintTop_toBottomOf="@id/btn_register" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

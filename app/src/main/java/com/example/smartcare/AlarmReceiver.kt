@@ -1,37 +1,49 @@
 package com.example.smartcare
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 
 class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val taskTitle = intent.getStringExtra("EXTRA_TASK_TITLE") ?: "Ada jadwal baru!"
-        val taskId = intent.getIntExtra("EXTRA_TASK_ID", 0)
+        val taskId = intent.getStringExtra("EXTRA_TASK_ID")
+        val taskTitle = intent.getStringExtra("EXTRA_TASK_TITLE") ?: "Anda memiliki tugas baru!"
 
-        // Intent untuk membuka aplikasi saat notifikasi di-klik
-        val mainIntent = Intent(context, LoginActivity::class.java).apply {
+        // --- BARU: Buat Intent untuk membuka aplikasi saat notifikasi diklik ---
+        val activityIntent = Intent(context, ElderlyDashboardActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        val pendingIntent: PendingIntent = PendingIntent.getActivity(context, taskId, mainIntent, PendingIntent.FLAG_IMMUTABLE)
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            activityIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        // --------------------------------------------------------------------
 
-        // Membuat notifikasi
-        val builder = NotificationCompat.Builder(context, SmartCareApplication.CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification) // Ikon notifikasi (lihat langkah terakhir)
-            .setContentTitle("Pengingat Jadwal SmartCare")
+        // Buat channel notifikasi (wajib untuk Android 8.0+)
+        val channelId = "smartcare_channel"
+        val channelName = "SmartCare Reminders"
+        val notificationManager = context.getSystemService(NotificationManager::class.java)
+
+        val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
+        notificationManager.createNotificationChannel(channel)
+
+        // Buat notifikasi
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("Pengingat Tugas")
             .setContentText(taskTitle)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true) // Notifikasi hilang saat di-klik
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent) // BARU: Tambahkan aksi klik di sini
+            .build()
 
-        // Tampilkan notifikasi
-        with(NotificationManagerCompat.from(context)) {
-            // Izin sudah diminta di ElderlyDashboardActivity
-            notify(taskId, builder.build())
-        }
+        notificationManager.notify(taskId.hashCode(), notification)
     }
 }

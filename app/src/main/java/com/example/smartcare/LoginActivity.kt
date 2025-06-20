@@ -3,6 +3,7 @@ package com.example.smartcare
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.RadioButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.smartcare.databinding.ActivityLoginBinding
@@ -17,7 +18,7 @@ class LoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
     private lateinit var auth: FirebaseAuth
-    private val db = Firebase.firestore // Tambahkan ini untuk akses ke Firestore
+    private val db = Firebase.firestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,47 +27,20 @@ class LoginActivity : AppCompatActivity() {
 
         auth = Firebase.auth
 
-        // Jika user sudah login dari sesi sebelumnya, langsung arahkan
-        if (auth.currentUser != null) {
-            // Kita default ke FamilyDashboard untuk sementara
-            val intent = Intent(this, FamilyDashboardActivity::class.java)
-            startActivity(intent)
-            finish()
-            return
-        }
-
-        // Mengatur listener untuk tombol login baru
-        binding.btnLoginKeluarga.setOnClickListener {
-            loginUser("keluarga")
-        }
-
-        binding.btnLoginLansia.setOnClickListener {
-            loginUser("lansia")
-        }
-
-        // Mengatur listener untuk tombol daftar
-        binding.btnRegister.setOnClickListener {
-            registerUser()
-        }
-    }
-
-    private fun registerUser() {
-        val email = binding.etEmail.text.toString().trim()
-        val password = binding.etPassword.text.toString().trim()
-
-        if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(baseContext, "Email dan Password tidak boleh kosong.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    Toast.makeText(baseContext, "Pendaftaran berhasil. Silakan login.", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(baseContext, "Pendaftaran gagal: ${task.exception?.message}", Toast.LENGTH_LONG).show()
-                }
+        binding.btnLogin.setOnClickListener {
+            val selectedRoleId = binding.radioGroupRoleLogin.checkedRadioButtonId
+            if (selectedRoleId == -1) {
+                Toast.makeText(this, "Silakan pilih peran Anda.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+            val selectedRole = findViewById<RadioButton>(selectedRoleId).text.toString().lowercase()
+            loginUser(selectedRole)
+        }
+
+        binding.tvGoToRegister.setOnClickListener {
+            startActivity(Intent(this, RegisterActivity::class.java))
+            finish() // Selesaikan activity ini agar tidak menumpuk
+        }
     }
 
     private fun loginUser(role: String) {
@@ -81,9 +55,7 @@ class LoginActivity : AppCompatActivity() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-
-                    // ▼▼▼ KODE BARU DIMASUKKAN DI SINI ▼▼▼
-                    // Setelah login berhasil, dapatkan dan simpan FCM Token
+                    // ... (Kode untuk menyimpan FCM token tetap sama) ...
                     val user = task.result?.user
                     if (user != null) {
                         FirebaseMessaging.getInstance().token.addOnCompleteListener { tokenTask ->
@@ -92,26 +64,21 @@ class LoginActivity : AppCompatActivity() {
                                 return@addOnCompleteListener
                             }
                             val token = tokenTask.result
-                            // Buat data untuk di-update di profil user
                             val userProfileUpdate = mapOf("fcmToken" to token)
-
-                            // Simpan token ke dokumen user di koleksi "users"
                             db.collection("users").document(user.uid)
                                 .set(userProfileUpdate, SetOptions.merge())
-                                .addOnSuccessListener { Log.d("FCM_TOKEN", "FCM Token berhasil disimpan ke Firestore.") }
-                                .addOnFailureListener { e -> Log.w("FCM_TOKEN", "Gagal menyimpan FCM Token.", e) }
                         }
                     }
-                    // ▲▲▲ AKHIR DARI KODE BARU ▲▲▲
 
                     Toast.makeText(baseContext, "Login berhasil!", Toast.LENGTH_SHORT).show()
 
-                    // Tentukan tujuan berdasarkan peran
                     val intent = if (role == "keluarga") {
                         Intent(this, FamilyDashboardActivity::class.java)
                     } else {
                         Intent(this, ElderlyDashboardActivity::class.java)
                     }
+                    // Hapus semua activity sebelumnya dari stack
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
                     finish()
 

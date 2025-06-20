@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pilih Jenis Tugas:"
+        android:textSize="16sp"/>
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/cg_task_category"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:singleSelection="true">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_medication"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Minum Obat"
+            app:chipIcon="@drawable/ic_task_medication"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_eat"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Makan"
+            app:chipIcon="@drawable/ic_task_food"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_doctor"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Janji Temu Dokter"
+            app:chipIcon="@drawable/ic_task_doctor"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_activity"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Aktivitas"
+            app:chipIcon="@drawable/ic_task_activity"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_other"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Lainnya..."
+            app:chipIcon="@drawable/ic_task_default"/>
+
+    </com.google.android.material.chip.ChipGroup>
+
+    <EditText
+        android:id="@+id/et_task_title_other"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Tuliskan tugas lainnya di sini"
+        android:inputType="textCapSentences"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/btn_time_picker"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Pilih Waktu Pengingat" />
+
+    <TextView
+        android:id="@+id/tv_selected_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Waktu"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:textColor="?attr/colorPrimary"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Ulangi Tugas:"
+        android:textSize="16sp"/>
+
+    <RadioGroup
+        android:id="@+id/rg_recurrence"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/rb_none"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tidak Pernah"
+            android:checked="true"/>
+
+        <RadioButton
+            android:id="@+id/rb_daily"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="Setiap Hari"/>
+
+    </RadioGroup>
+
+</LinearLayout>
