@@ -10,32 +10,37 @@ import com.google.firebase.ktx.Firebase
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
-    private lateinit var auth: FirebaseAuth
+    private lateinit var binding: ActivityMainBinding // view binding untuk akses layout
+    private lateinit var auth: FirebaseAuth // objek autentikasi Firebase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        binding = ActivityMainBinding.inflate(layoutInflater) // inisialisasi binding
+        setContentView(binding.root) // set tampilan dari file layout XML
 
-        auth = Firebase.auth
+        auth = Firebase.auth // ambil instance Firebase Auth
 
-        val currentUser = auth.currentUser
+        val currentUser = auth.currentUser // cek apakah user sudah login
+
         if (currentUser == null) {
+            // kalau belum login, langsung arahkan ke halaman login
             goToLoginActivity()
         } else {
+            // kalau sudah login, tampilkan pesan sambutan dengan email user
             binding.tvWelcomeMessage.text = "Selamat Datang, \n${currentUser.email}"
         }
 
+        // ketika tombol logout ditekan
         binding.btnLogout.setOnClickListener {
-            auth.signOut()
-            goToLoginActivity()
+            auth.signOut() // keluar dari akun
+            goToLoginActivity() // kembali ke halaman login
         }
     }
 
+    // fungsi bantu untuk berpindah ke LoginActivity dan menutup activity ini
     private fun goToLoginActivity() {
         val intent = Intent(this, LoginActivity::class.java)
         startActivity(intent)
-        finish()
+        finish() // supaya user nggak bisa kembali ke MainActivity setelah logout
     }
 }

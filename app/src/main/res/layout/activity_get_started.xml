@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Gunakan ConstraintLayout supaya bisa bebas atur posisi tiap elemen saling terkait -->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -7,6 +8,7 @@
     android:background="@android:color/white"
     tools:context=".GetStartedActivity">
 
+    <!-- Logo aplikasi, posisinya di tengah atas -->
     <ImageView
         android:id="@+id/iv_logo"
         android:layout_width="150dp"
@@ -15,8 +17,9 @@
         android:src="@drawable/logo_smartcare"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" /> <!-- Jarak dari atas layar -->
 
+    <!-- Judul besar "Get Started", ditaruh di bawah logo -->
     <TextView
         android:id="@+id/tv_title"
         android:layout_width="wrap_content"
@@ -30,6 +33,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/iv_logo" />
 
+    <!-- Subjudul kecil, beri info tambahan -->
     <TextView
         android:id="@+id/tv_subtitle"
         android:layout_width="wrap_content"
@@ -41,6 +45,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_title" />
 
+    <!-- Tombol untuk Sign Up, posisinya di atas tombol Sign In -->
     <Button
         android:id="@+id/btn_go_to_sign_up"
         android:layout_width="0dp"
@@ -56,21 +61,22 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- Tombol untuk Sign In, posisinya paling bawah -->
     <Button
         android:id="@+id/btn_go_to_sign_in"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"
-        android:layout_marginBottom="64dp"
-        android:paddingVertical="14dp"
-        android:text="SIGN IN"
-        android:textColor="#7cb3fc"
-        android:textSize="16sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:strokeColor="#7cb3fc" />
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="32dp"
+    android:layout_marginEnd="32dp"
+    android:layout_marginBottom="64dp"
+    android:paddingVertical="14dp"
+    android:text="SIGN IN"
+    android:textColor="#7cb3fc"
+    android:textSize="16sp"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:strokeColor="#7cb3fc" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

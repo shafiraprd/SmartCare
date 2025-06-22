@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Root layout yang fleksibel: bisa atur posisi elemen relatif terhadap yang lain -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -6,21 +7,26 @@
     android:layout_height="match_parent"
     tools:context=".ElderlyDashboardActivity">
 
+    <!-- Ini kontainer utama tempat semua isi dashboard ditaruh -->
     <FrameLayout
         android:id="@+id/main_content_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@id/bottom_nav_view_elderly">
 
+        <!-- Bagian tampilan tugas-tugas yang sedang aktif -->
         <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:id="@+id/tasks_view_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="visible">
 
+            <!-- Bagian AppBar yang isinya toolbar -->
             <com.google.android.material.appbar.AppBarLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
+
+                <!-- Toolbar atas: tampilkan judul halaman -->
                 <androidx.appcompat.widget.Toolbar
                     android:id="@+id/toolbar_elderly"
                     app:title="Dasbor Tugas Anda"
@@ -30,6 +36,7 @@
                     android:background="?attr/colorPrimary" />
             </com.google.android.material.appbar.AppBarLayout>
 
+            <!-- Isi utama halaman: ada info koneksi dan daftar tugas -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -37,19 +44,24 @@
                 android:padding="16dp"
                 app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+                <!-- Kartu yang menampilkan kode koneksi buat keluarga -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="16dp">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Kode Koneksi Anda (untuk keluarga):"
                             android:textSize="18sp"/>
+
+                        <!-- Teks yang bakal diisi otomatis dengan kode koneksi -->
                         <TextView
                             android:id="@+id/tv_connection_code"
                             android:layout_width="wrap_content"
@@ -60,15 +72,16 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- Daftar tugas yang ditampilkan dalam bentuk list -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_tasks"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_marginTop="16dp"/>
             </LinearLayout>
-
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
+        <!-- Bagian tampilan profil, awalnya disembunyikan (visibility gone) -->
         <LinearLayout
             android:id="@+id/profile_view_container"
             android:layout_width="match_parent"
@@ -79,6 +92,7 @@
             android:gravity="center_horizontal"
             android:background="@android:color/white">
 
+            <!-- Judul bagian profil -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -87,18 +101,23 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="24dp"/>
 
+            <!-- Kartu berisi info login/email -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="20dp">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Anda login sebagai:"/>
+
+                    <!-- Email user akan ditampilkan di sini -->
                     <TextView
                         android:id="@+id/tv_profile_email"
                         android:layout_width="wrap_content"
@@ -109,17 +128,20 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Spacer biar tombol di bawah tetap berada di bawah -->
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"/>
 
+            <!-- Tombol untuk ganti password -->
             <Button
                 android:id="@+id/btn_change_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Ganti Kata Sandi"/>
 
+            <!-- Tombol logout, dengan gaya outlined merah -->
             <Button
                 android:id="@+id/btn_profile_logout"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
@@ -129,11 +151,10 @@
                 android:textColor="@android:color/holo_red_dark"
                 app:strokeColor="@android:color/holo_red_dark"
                 android:text="Logout"/>
-
         </LinearLayout>
-
     </FrameLayout>
 
+    <!-- Navigasi bawah untuk ganti tampilan (misalnya ke profil atau dashboard) -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_nav_view_elderly"
         android:layout_width="match_parent"

@@ -13,9 +13,9 @@ import com.google.firebase.ktx.Firebase
 
 class SplashActivity : AppCompatActivity() {
 
-    private val splashTimeOut: Long = 2000 // 2 detik
-    private lateinit var auth: FirebaseAuth
-    private val db = Firebase.firestore
+    private val splashTimeOut: Long = 2000 // durasi splash screen: 2 detik
+    private lateinit var auth: FirebaseAuth // auth untuk cek login
+    private val db = Firebase.firestore // firestore database
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,58 +23,64 @@ class SplashActivity : AppCompatActivity() {
 
         auth = Firebase.auth
 
+        // jalankan fungsi checkUserSession setelah 2 detik (splash selesai)
         Handler(Looper.getMainLooper()).postDelayed({
             checkUserSession()
         }, splashTimeOut)
     }
 
+    // cek apakah user sudah login atau belum
     private fun checkUserSession() {
         val currentUser = auth.currentUser
         if (currentUser != null) {
-            // Jika ada pengguna yang sudah login, periksa perannya
+            // jika sudah login, periksa role-nya dari database
             checkUserRoleAndRedirect(currentUser.uid)
         } else {
-            // Jika tidak ada yang login, arahkan ke halaman Get Started
+            // kalau belum login, langsung ke halaman GetStarted
             startActivity(Intent(this, GetStartedActivity::class.java))
             finish()
         }
     }
 
+    // ambil data pengguna berdasarkan UID dan arahkan sesuai perannya
     private fun checkUserRoleAndRedirect(uid: String) {
         db.collection("users").document(uid).get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
                     val role = document.getString("role")
+
+                    // arahkan user ke halaman yang sesuai dengan perannya
                     val intent = when (role) {
                         "keluarga" -> Intent(this, FamilyDashboardActivity::class.java)
                         "lansia" -> Intent(this, ElderlyDashboardActivity::class.java)
-                        else -> null // Peran tidak diketahui
+                        else -> null // peran tidak valid
                     }
 
                     if (intent != null) {
                         startActivity(intent)
                         finish()
                     } else {
-                        // Jika peran tidak ada atau tidak valid, logout dan ke halaman login
+                        // role tidak dikenali → logout dan ke halaman login
                         Toast.makeText(this, "Peran pengguna tidak dikenali.", Toast.LENGTH_SHORT).show()
                         logoutAndGoToLogin()
                     }
                 } else {
-                    // Jika data tidak ada di firestore (kasus anomali)
+                    // data user tidak ditemukan di Firestore (mungkin akun baru tapi belum lengkap)
                     Toast.makeText(this, "Data pengguna tidak ditemukan.", Toast.LENGTH_SHORT).show()
                     logoutAndGoToLogin()
                 }
             }
             .addOnFailureListener {
-                // Jika gagal mengambil data dari firestore
+                // jika terjadi error saat ambil data user dari Firestore
                 Toast.makeText(this, "Gagal memverifikasi sesi.", Toast.LENGTH_SHORT).show()
                 logoutAndGoToLogin()
             }
     }
 
+    // fungsi untuk logout user dan pindah ke halaman login
     private fun logoutAndGoToLogin() {
         auth.signOut()
         startActivity(Intent(this, LoginActivity::class.java))
-        finishAffinity()
+        finishAffinity() // hapus semua activity sebelumnya dari backstack
     }
 }

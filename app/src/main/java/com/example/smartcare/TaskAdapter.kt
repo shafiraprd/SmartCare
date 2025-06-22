@@ -12,14 +12,16 @@ import androidx.recyclerview.widget.RecyclerView
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+// Adapter ini digunakan untuk menampilkan daftar tugas (task) dalam RecyclerView
 class TaskAdapter(
-    private var tasks: MutableList<Task>,
-    private val userRole: String,
-    private val onItemClick: (Task) -> Unit,
-    private val onEditClick: (Task) -> Unit,
-    private val onDeleteClick: (Task) -> Unit
+    private var tasks: MutableList<Task>, // list tugas yang akan ditampilkan
+    private val userRole: String, // peran pengguna: "family" atau "elderly"
+    private val onItemClick: (Task) -> Unit, // dipanggil saat checkbox diklik
+    private val onEditClick: (Task) -> Unit, // dipanggil saat tombol edit diklik
+    private val onDeleteClick: (Task) -> Unit // dipanggil saat tombol hapus diklik
 ) : RecyclerView.Adapter<TaskAdapter.TaskViewHolder>() {
 
+    // ViewHolder adalah komponen yang memegang view dari tiap item
     class TaskViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val ivTaskIcon: ImageView = itemView.findViewById(R.id.iv_task_icon)
         val tvTaskTitle: TextView = itemView.findViewById(R.id.tv_task_title)
@@ -31,20 +33,21 @@ class TaskAdapter(
         val tvTaskReminderTime: TextView = itemView.findViewById(R.id.tv_task_reminder_time)
     }
 
+    // Membuat tampilan layout untuk tiap item di daftar
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TaskViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_task, parent, false)
         return TaskViewHolder(view)
     }
 
-    // FUNGSI onBindViewHolder YANG SUDAH DIGABUNG DAN DIPERBAIKI
+    // Mengisi data ke tampilan item berdasarkan posisi
     override fun onBindViewHolder(holder: TaskViewHolder, position: Int) {
         val task = tasks[position]
 
-        // Mengatur teks judul dan status
+        // Tampilkan judul dan status tugas
         holder.tvTaskTitle.text = task.title
         holder.tvTaskStatus.text = "Status: ${task.status}"
 
-        // Menampilkan catatan jika ada
+        // Jika catatan ada isinya, tampilkan. Kalau kosong, disembunyikan.
         if (task.notes.isNotEmpty()) {
             holder.tvTaskNotes.text = task.notes
             holder.tvTaskNotes.visibility = View.VISIBLE
@@ -52,7 +55,7 @@ class TaskAdapter(
             holder.tvTaskNotes.visibility = View.GONE
         }
 
-        // Memilih ikon berdasarkan judul tugas
+        // Menentukan ikon berdasarkan isi judul tugas (pakai kata kunci sederhana)
         val taskTitleLower = task.title.lowercase(Locale.ROOT)
         val iconResId = when {
             "obat" in taskTitleLower -> R.drawable.ic_task_medication
@@ -63,7 +66,7 @@ class TaskAdapter(
         }
         holder.ivTaskIcon.setImageResource(iconResId)
 
-        // Menampilkan waktu pengingat jika ada
+        // Tampilkan waktu pengingat jika ada
         task.reminderTime?.let { timestamp ->
             val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
             holder.tvTaskReminderTime.text = "Pengingat: ${sdf.format(timestamp.toDate())}"
@@ -72,42 +75,48 @@ class TaskAdapter(
             holder.tvTaskReminderTime.visibility = View.GONE
         }
 
-        // Mengatur visibilitas tombol berdasarkan peran pengguna
+        // Tampilkan atau sembunyikan tombol berdasarkan peran pengguna
         if (userRole == "family") {
+            // Keluarga tidak bisa mencentang checkbox, tapi bisa edit dan hapus
             holder.cbTaskDone.visibility = View.GONE
             holder.ivEditTask.visibility = View.VISIBLE
             holder.ivDeleteTask.visibility = View.VISIBLE
-        } else { // elderly
+        } else { // lansia
+            // Lansia bisa centang tugas, tapi tidak bisa edit atau hapus
             holder.cbTaskDone.visibility = View.VISIBLE
             holder.ivEditTask.visibility = View.GONE
             holder.ivDeleteTask.visibility = View.GONE
-            // Memperbesar font untuk lansia
+
+            // Font diperbesar supaya lebih mudah dibaca
             holder.tvTaskTitle.textSize = 20f
             holder.tvTaskReminderTime.textSize = 16f
             holder.tvTaskStatus.textSize = 16f
             holder.cbTaskDone.textSize = 18f
         }
 
-        // Memberikan efek coretan jika tugas sudah selesai
+        // Kalau status tugas "completed", tampilkan garis coretan dan redupkan warna teks
         if (task.status == "completed") {
             holder.tvTaskTitle.paintFlags = holder.tvTaskTitle.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
             holder.tvTaskTitle.alpha = 0.5f
         } else {
+            // Kalau belum selesai, tampilkan normal
             holder.tvTaskTitle.paintFlags = holder.tvTaskTitle.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
             holder.tvTaskTitle.alpha = 1.0f
         }
 
-        // Mengatur status checkbox
+        // Atur status checkbox sesuai status tugas
         holder.cbTaskDone.isChecked = task.status == "completed"
 
-        // Mengatur semua listener
+        // Atur listener saat tombol diklik
         holder.ivEditTask.setOnClickListener { onEditClick(task) }
         holder.ivDeleteTask.setOnClickListener { onDeleteClick(task) }
-        holder.cbTaskDone.setOnClickListener { onItemClick(task) }
+        holder.cbTaskDone.setOnClickListener { onItemClick(task) } // checkbox dipakai untuk update status
     }
 
+    // Jumlah item yang akan ditampilkan
     override fun getItemCount(): Int = tasks.size
 
+    // Fungsi untuk memperbarui data tugas yang ditampilkan
     fun updateTasks(newTasks: List<Task>) {
         tasks.clear()
         tasks.addAll(newTasks)

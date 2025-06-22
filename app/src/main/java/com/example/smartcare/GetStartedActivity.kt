@@ -9,27 +9,30 @@ import com.google.firebase.ktx.Firebase
 
 class GetStartedActivity : AppCompatActivity() {
 
+    // View binding untuk akses langsung ke komponen di layout get_started.xml
     private lateinit var binding: ActivityGetStartedBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityGetStartedBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(binding.root) // tampilkan layout dari view binding
 
-        // Jika user sudah login, langsung ke dashboard yang sesuai
-        // (Kita akan tambahkan logika pengecekan peran nanti, untuk sekarang ke Family)
+        // Cek apakah user sudah login atau belum
         if (Firebase.auth.currentUser != null) {
-            // Untuk sementara, kita arahkan ke FamilyDashboardActivity
-            // Idealnya, Anda harus menyimpan peran user dan mengarahkannya dengan benar
+            // Kalau sudah login, langsung arahkan ke halaman dashboard
+            // Untuk sekarang default-nya ke FamilyDashboardActivity
+            // Nantinya bisa tambahkan logika peran (role) untuk arahkan ke dashboard yang tepat
             startActivity(Intent(this, FamilyDashboardActivity::class.java))
-            finish()
+            finish() // tutup halaman GetStarted supaya tidak bisa balik ke sini pakai tombol back
             return
         }
 
+        // Tombol untuk ke halaman login
         binding.btnGoToSignIn.setOnClickListener {
             startActivity(Intent(this, LoginActivity::class.java))
         }
 
+        // Tombol untuk ke halaman register (buat akun baru)
         binding.btnGoToSignUp.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }

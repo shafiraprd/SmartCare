@@ -6,7 +6,7 @@ import com.google.firebase.firestore.ServerTimestamp
 data class Task(
     var id: String = "",
     var title: String = "",
-    var notes: String = "", // Pastikan properti ini ada
+    var notes: String = "",
     var createdBy: String = "",
     var assignedTo: String = "",
     @ServerTimestamp

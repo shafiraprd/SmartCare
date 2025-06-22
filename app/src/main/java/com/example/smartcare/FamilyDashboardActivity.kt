@@ -25,55 +25,58 @@ import java.util.Calendar
 
 class FamilyDashboardActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityFamilyDashboardBinding
-    private val db = Firebase.firestore
-    private val auth = Firebase.auth
-    private var elderlyId: String? = null
-    private lateinit var elderlyUserAdapter: ElderlyUserAdapter
-    private val elderlyUserList = mutableListOf<User>()
-    // taskAdapter dan alarmScheduler dipindahkan ke TaskListActivity
-    // Namun, kita butuh alarmScheduler di sini untuk deleteTask di masa depan jika diperlukan
-    // Untuk saat ini, kita sederhanakan dan hanya fokus pada logika yang ada
+    private lateinit var binding: ActivityFamilyDashboardBinding // buat akses ke komponen XML via View Binding
+    private val db = Firebase.firestore // akses database Firestore
+    private val auth = Firebase.auth // akses autentikasi pengguna
+    private var elderlyId: String? = null // nanti bisa dipakai untuk simpan ID lansia yang dipilih
+    private lateinit var elderlyUserAdapter: ElderlyUserAdapter // adapter untuk daftar lansia
+    private val elderlyUserList = mutableListOf<User>() // data user lansia yang terkoneksi
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityFamilyDashboardBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        binding = ActivityFamilyDashboardBinding.inflate(layoutInflater) // inisialisasi binding
+        setContentView(binding.root) // tampilkan layout dari binding
 
-        setSupportActionBar(binding.toolbar)
+        setSupportActionBar(binding.toolbar) // set toolbar di atas
 
-        setupElderlyUserRecyclerView()
+        setupElderlyUserRecyclerView() // siapkan tampilan daftar lansia
 
-        val familyId = auth.currentUser?.uid
+        val familyId = auth.currentUser?.uid // ambil ID user keluarga yang login
         if (familyId == null) {
-            goToLogin()
+            goToLogin() // kalau belum login, langsung ke halaman login
             return
         }
-        listenForConnectedElderly(familyId)
 
+        listenForConnectedElderly(familyId) // pantau perubahan data lansia yang terkoneksi
+
+        // tombol untuk menambahkan koneksi ke lansia baru
         binding.fabAddElderly.setOnClickListener {
             promptToConnect()
         }
 
+        // navigasi bawah: toggle antara tampilan tugas dan profil
         binding.bottomNavView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.navigation_tasks -> {
+                    // tampilkan tampilan tugas, sembunyikan profil
                     binding.tasksViewContainer.visibility = View.VISIBLE
                     binding.profileViewContainer.visibility = View.GONE
                     supportActionBar?.title = "Pilih Lansia"
                     true
                 }
                 R.id.navigation_profile -> {
+                    // tampilkan tampilan profil, sembunyikan tugas
                     binding.tasksViewContainer.visibility = View.GONE
                     binding.profileViewContainer.visibility = View.VISIBLE
                     supportActionBar?.title = "Profil"
-                    loadProfileData()
+                    loadProfileData() // isi data profil user
                     true
                 }
                 else -> false
             }
         }
 
+        // tombol ubah password: kirim email reset ke email yang login
         binding.btnChangePassword.setOnClickListener {
             val user = auth.currentUser
             if (user?.email != null) {
@@ -86,15 +89,18 @@ class FamilyDashboardActivity : AppCompatActivity() {
             }
         }
 
+        // tombol logout
         binding.btnProfileLogout.setOnClickListener {
             logoutUser()
         }
     }
 
+    // Setup tampilan daftar lansia di RecyclerView
     private fun setupElderlyUserRecyclerView() {
         elderlyUserAdapter = ElderlyUserAdapter(
             elderlyUserList,
             onItemClick = { user ->
+                // saat item diklik, buka halaman TaskList dan kirim ID serta nama/email user
                 val intent = Intent(this, TaskListActivity::class.java).apply {
                     putExtra("ELDERLY_ID", user.uid)
                     putExtra("ELDERLY_DISPLAY_NAME", if (user.name.isNotEmpty()) user.name else user.email)
@@ -102,13 +108,14 @@ class FamilyDashboardActivity : AppCompatActivity() {
                 startActivity(intent)
             },
             onDeleteClick = { user ->
-                showDeleteConnectionConfirmation(user)
+                showDeleteConnectionConfirmation(user) // tampilkan dialog konfirmasi hapus koneksi
             }
         )
         binding.rvElderlyUsers.adapter = elderlyUserAdapter
         binding.rvElderlyUsers.layoutManager = LinearLayoutManager(this)
     }
 
+    // Dengar terus apakah ada perubahan data lansia yang terhubung
     private fun listenForConnectedElderly(familyId: String) {
         db.collection("users").document(familyId)
             .addSnapshotListener { snapshot, e ->
@@ -124,15 +131,18 @@ class FamilyDashboardActivity : AppCompatActivity() {
                     return@addSnapshotListener
                 }
 
+                // ambil data masing-masing lansia yang terhubung
                 for (elderlyId in connectedIds) {
                     db.collection("users").document(elderlyId).get().addOnSuccessListener { elderlyDoc ->
                         val name = elderlyDoc.getString("name") ?: ""
                         val email = elderlyDoc.getString("email") ?: "N/A"
                         val user = User(uid = elderlyId, name = name, email = email, role = "lansia")
 
+                        // hindari data duplikat
                         currentUsers.removeAll { it.uid == user.uid }
                         currentUsers.add(user)
 
+                        // update list kalau semua data sudah didapat
                         if (currentUsers.size == connectedIds.size) {
                             elderlyUserAdapter.updateUsers(currentUsers)
                         }
@@ -141,6 +151,7 @@ class FamilyDashboardActivity : AppCompatActivity() {
             }
     }
 
+    // Tampilkan pop-up konfirmasi sebelum menghapus koneksi ke user lansia
     private fun showDeleteConnectionConfirmation(user: User) {
         val displayName = if (user.name.isNotEmpty()) user.name else user.email
         AlertDialog.Builder(this)
@@ -155,6 +166,7 @@ class FamilyDashboardActivity : AppCompatActivity() {
             .show()
     }
 
+    // Proses menghapus ID user lansia dari daftar yang terhubung
     private fun deleteElderlyConnection(user: User) {
         val familyId = auth.currentUser?.uid ?: return
         db.collection("users").document(familyId)
@@ -164,6 +176,7 @@ class FamilyDashboardActivity : AppCompatActivity() {
             }
     }
 
+    // Tampilkan dialog untuk menghubungkan ke lansia baru
     private fun promptToConnect() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Hubungkan dengan Lansia")
@@ -182,6 +195,7 @@ class FamilyDashboardActivity : AppCompatActivity() {
         builder.show()
     }
 
+    // Lakukan pencarian lansia berdasarkan input user (email atau kode koneksi)
     private fun connectWithElderly(input: String) {
         val isEmail = input.contains("@") && input.contains(".")
         val query = if (isEmail) {
@@ -189,6 +203,8 @@ class FamilyDashboardActivity : AppCompatActivity() {
         } else {
             db.collection("users").whereEqualTo("connectionCode", input)
         }
+
+        // pastikan user tersebut memang role-nya "lansia"
         query.whereEqualTo("role", "lansia").get()
             .addOnSuccessListener { documents ->
                 if (documents.isEmpty) {
@@ -205,15 +221,18 @@ class FamilyDashboardActivity : AppCompatActivity() {
             }
     }
 
+    // Menampilkan email pengguna di halaman profil
     private fun loadProfileData() {
         binding.tvProfileEmail.text = auth.currentUser?.email ?: "Tidak ditemukan"
     }
 
+    // Logout user dari aplikasi
     private fun logoutUser() {
         auth.signOut()
         goToLogin()
     }
 
+    // Navigasi ke halaman login dan hapus semua activity sebelumnya
     private fun goToLogin() {
         startActivity(Intent(this, LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

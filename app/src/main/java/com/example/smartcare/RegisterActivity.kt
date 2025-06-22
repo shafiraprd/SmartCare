@@ -13,19 +13,24 @@ import com.google.firebase.ktx.Firebase
 
 class RegisterActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityRegisterBinding
-    private lateinit var auth: FirebaseAuth
-    private val db = Firebase.firestore
+    private lateinit var binding: ActivityRegisterBinding // untuk binding layout XML
+    private lateinit var auth: FirebaseAuth                // objek FirebaseAuth untuk auth
+    private val db = Firebase.firestore                    // objek Firestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        auth = Firebase.auth
+
+        auth = Firebase.auth // inisialisasi Firebase Authentication
+
+        // tombol untuk daftar ditekan
         binding.btnRegister.setOnClickListener { registerUser() }
+
+        // teks "Sudah punya akun? Login" ditekan
         binding.tvGoToLogin.setOnClickListener {
             startActivity(Intent(this, LoginActivity::class.java))
-            finish()
+            finish() // tutup activity ini supaya tidak bisa kembali ke sini setelah login
         }
     }
 
@@ -35,16 +40,22 @@ class RegisterActivity : AppCompatActivity() {
         val password = binding.etPasswordRegister.text.toString().trim()
         val selectedRoleId = binding.radioGroupRoleRegister.checkedRadioButtonId
 
+        // validasi input
         if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Nama, Email, dan Password tidak boleh kosong.", Toast.LENGTH_SHORT).show()
             return
         }
+
+        // pastikan peran (role) sudah dipilih
         if (selectedRoleId == -1) {
             Toast.makeText(this, "Silakan pilih peran Anda.", Toast.LENGTH_SHORT).show()
             return
         }
+
+        // ambil peran dari pilihan radio button (keluarga atau lansia)
         val role = findViewById<RadioButton>(selectedRoleId).text.toString().lowercase()
 
+        // mulai proses registrasi akun baru di Firebase
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
@@ -55,21 +66,26 @@ class RegisterActivity : AppCompatActivity() {
                             "email" to email,
                             "role" to role
                         )
-                        // Buat kode koneksi unik HANYA jika perannya lansia
+
+                        // jika peran adalah lansia, buat connection code unik
                         if (role == "lansia") {
-                            val newCode = (1..6).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".random() }.joinToString("")
+                            val newCode = (1..6)
+                                .map { "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".random() }
+                                .joinToString("")
                             userProfile["connectionCode"] = newCode
                         }
 
+                        // simpan data profil ke Firestore
                         db.collection("users").document(uid).set(userProfile)
                             .addOnSuccessListener {
                                 Toast.makeText(this, "Pendaftaran berhasil! Silakan login.", Toast.LENGTH_LONG).show()
-                                auth.signOut() // Langsung logout agar user harus login manual
+                                auth.signOut() // logout supaya user login ulang dengan peran
                                 startActivity(Intent(this, LoginActivity::class.java))
-                                finishAffinity()
+                                finishAffinity() // hapus semua activity sebelumnya dari stack
                             }
                     }
                 } else {
+                    // kalau gagal daftar, tampilkan pesan error
                     Toast.makeText(this, "Pendaftaran gagal: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                 }
             }

@@ -1,3 +1,4 @@
+// Halaman ini digunakan untuk menampilkan dan mengelola daftar tugas untuk seorang lansia dari sisi anggota keluarga
 package com.example.smartcare
 
 import android.app.DatePickerDialog
@@ -26,94 +27,96 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-// Ini adalah halaman untuk anggota keluarga melihat dan mengelola tugas untuk seorang lansia.
 class TaskListActivity : AppCompatActivity() {
 
-    // Oke, ini semua variabel yang aku butuhkan untuk halaman ini.
-    private lateinit var binding: ActivityTaskListBinding // Untuk mengakses elemen UI.
-    private val db = Firebase.firestore // Koneksi ke database Firestore.
-    private val auth = Firebase.auth // Untuk informasi user yang login.
-    private var elderlyId: String? = null // Untuk menyimpan ID lansia yang sedang dilihat.
-    private lateinit var taskAdapter: TaskAdapter // Adapter untuk menampilkan daftar tugas.
-    private lateinit var alarmScheduler: AlarmScheduler // Objek untuk mengatur alarm.
+    // Menghubungkan tampilan XML dengan logika Kotlin
+    private lateinit var binding: ActivityTaskListBinding
+
+    // Referensi ke Firestore database
+    private val db = Firebase.firestore
+
+    // Untuk mengecek siapa pengguna yang login sekarang
+    private val auth = Firebase.auth
+
+    // Menyimpan ID lansia yang sedang dikelola tugasnya
+    private var elderlyId: String? = null
+
+    // Adapter yang bertugas menampilkan data ke dalam RecyclerView
+    private lateinit var taskAdapter: TaskAdapter
+
+    // Untuk menjadwalkan alarm pengingat (di sisi perangkat lansia)
+    private lateinit var alarmScheduler: AlarmScheduler
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Fungsi ini dijalankan saat halaman pertama kali dibuat.
         super.onCreate(savedInstanceState)
         binding = ActivityTaskListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Inisialisasi AlarmScheduler.
+        // Inisialisasi object alarm scheduler
         alarmScheduler = AlarmScheduler(this)
 
-        // Aku akan ambil ID dan nama lansia yang dikirim dari halaman sebelumnya.
+        // Ambil data ID dan nama lansia dari intent yang dikirim dari halaman sebelumnya
         elderlyId = intent.getStringExtra("ELDERLY_ID")
         val elderlyDisplayName = intent.getStringExtra("ELDERLY_DISPLAY_NAME")
 
-        // Kalau ID lansia tidak ada, ini masalah. Tampilkan pesan error dan tutup halaman.
+        // Jika ID tidak ditemukan, tutup halaman ini karena tidak bisa lanjut
         if (elderlyId == null) {
             Toast.makeText(this, "ID Lansia tidak ditemukan.", Toast.LENGTH_LONG).show()
             finish()
             return
         }
 
-        // Atur toolbar di bagian atas halaman.
+        // Atur tampilan toolbar di bagian atas
         setSupportActionBar(binding.toolbarTaskList)
-        supportActionBar?.title = "Tugas untuk: $elderlyDisplayName" // Tampilkan nama lansia di judul.
-        supportActionBar?.setDisplayHomeAsUpEnabled(true) // Tambahkan tombol kembali.
+        supportActionBar?.title = "Tugas untuk: $elderlyDisplayName"
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        // Siapkan RecyclerView untuk menampilkan daftar tugas.
+        // Siapkan tampilan list tugas (RecyclerView)
         setupRecyclerView()
-        // Mulai 'mendengarkan' perubahan data tugas dari Firestore.
+
+        // Dengarkan perubahan data dari database secara real-time
         listenForTaskUpdates(elderlyId!!)
-        // Atur aksi untuk tombol FAB (+) untuk menambah tugas baru.
+
+        // Jika tombol tambah tugas ditekan, tampilkan dialog input
         binding.fabAddTask.setOnClickListener { showTaskDialog(null) }
     }
 
-    // Kalau tombol kembali di toolbar ditekan, tutup halaman ini.
+    // Saat tombol back di toolbar ditekan
     override fun onSupportNavigateUp(): Boolean {
         finish()
         return true
     }
 
-    // Fungsi untuk menyiapkan RecyclerView.
+    // Menyiapkan RecyclerView dan adapter
     private fun setupRecyclerView() {
-        // Buat adapter dengan logika untuk klik edit dan hapus.
         taskAdapter = TaskAdapter(
             mutableListOf(), "family",
-            onItemClick = {}, // Tidak ada aksi saat item di-klik biasa.
-            onEditClick = { task -> showTaskDialog(task) }, // Kalau ikon edit di-klik, tampilkan dialog edit.
-            onDeleteClick = { task -> deleteTask(task) } // Kalau ikon hapus di-klik, hapus tugas.
+            onItemClick = {},
+            onEditClick = { task -> showTaskDialog(task) },
+            onDeleteClick = { task -> deleteTask(task) }
         )
-        // Hubungkan adapter dan layout manager ke RecyclerView.
         binding.rvTasks.adapter = taskAdapter
         binding.rvTasks.layoutManager = LinearLayoutManager(this)
     }
 
-    // Fungsi ini terus memantau koleksi 'tasks' di Firestore.
+    // Mendengarkan data tugas dari Firestore secara langsung
     private fun listenForTaskUpdates(elderlyId: String) {
         db.collection("users").document(elderlyId).collection("tasks")
-            .orderBy("createdAt") // Urutkan berdasarkan waktu pembuatan.
+            .orderBy("createdAt")
             .addSnapshotListener { snapshots, e ->
-                // Kalau ada error, hentikan.
-                if (e != null) { return@addSnapshotListener }
-                // Ubah data dari Firestore menjadi daftar objek Task.
+                if (e != null) return@addSnapshotListener
                 val tasks = snapshots?.toObjects(Task::class.java)?.mapIndexed { index, task ->
                     task.apply { id = snapshots.documents[index].id }
                 } ?: emptyList()
-                // Perbarui data di adapter agar tampilan di layar juga ikut berubah.
                 taskAdapter.updateTasks(tasks)
             }
     }
 
-    // Menampilkan dialog untuk menambah atau mengedit tugas.
+    // Menampilkan dialog untuk input tugas baru atau edit tugas lama
     private fun showTaskDialog(task: Task?) {
-        // Kalau 'task' tidak null, berarti ini mode edit.
         val isEditMode = task != null
-        // Siapkan layout untuk dialog.
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_task, null)
 
-        // Inisialisasi semua elemen UI di dalam dialog.
         val categoryGroup = dialogView.findViewById<ChipGroup>(R.id.cg_task_category)
         val notesLayout = dialogView.findViewById<TextInputLayout>(R.id.til_task_notes)
         val notesInput = dialogView.findViewById<EditText>(R.id.et_task_notes)
@@ -123,7 +126,7 @@ class TaskListActivity : AppCompatActivity() {
         val tvSelectedTime = dialogView.findViewById<TextView>(R.id.tv_selected_time)
         val recurrenceGroup = dialogView.findViewById<RadioGroup>(R.id.rg_recurrence)
 
-        // ... (Logika dialog lainnya tidak perlu diubah)
+        // Ganti hint input berdasarkan kategori yang dipilih
         categoryGroup.setOnCheckedStateChangeListener { _, checkedIds ->
             notesLayout.hint = if (checkedIds.contains(R.id.chip_other)) "Judul Tugas Lainnya (wajib diisi)" else "Catatan (opsional)"
         }
@@ -132,10 +135,12 @@ class TaskListActivity : AppCompatActivity() {
         var dateSet = false
         var timeSet = false
 
+        // Kalau sedang edit tugas, bisa isi nilai-nilai lama ke dialog (belum diisi)
         if (isEditMode && task != null) {
-            // Logika untuk mengisi dialog saat mode edit
+            // Kosong untuk sekarang
         }
 
+        // Ketika tombol pilih tanggal ditekan
         datePickerButton.setOnClickListener {
             val calendar = Calendar.getInstance()
             DatePickerDialog(this, { _, year, month, dayOfMonth ->
@@ -149,6 +154,7 @@ class TaskListActivity : AppCompatActivity() {
             }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
         }
 
+        // Ketika tombol pilih jam ditekan
         timePickerButton.setOnClickListener {
             val calendar = Calendar.getInstance()
             TimePickerDialog(this, { _, hourOfDay, minute ->
@@ -161,12 +167,11 @@ class TaskListActivity : AppCompatActivity() {
             }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true).show()
         }
 
-        // Tampilkan dialognya.
+        // Tampilkan kotak dialog ke layar
         AlertDialog.Builder(this)
             .setTitle(if (isEditMode) "Edit Tugas" else "Tambah Tugas Baru")
             .setView(dialogView)
             .setPositiveButton(if (isEditMode) "Simpan" else "Tambah") { _, _ ->
-                // Logika saat tombol 'Tambah' atau 'Simpan' ditekan.
                 val checkedChipId = categoryGroup.checkedChipId
                 if (checkedChipId == View.NO_ID) {
                     Toast.makeText(this, "Silakan pilih jenis tugas.", Toast.LENGTH_SHORT).show()
@@ -184,9 +189,7 @@ class TaskListActivity : AppCompatActivity() {
                         }
                         Pair(notes, "")
                     }
-                    else -> {
-                        Pair(selectedChip.text.toString(), notes)
-                    }
+                    else -> Pair(selectedChip.text.toString(), notes)
                 }
 
                 var reminderTime: Timestamp? = null
@@ -207,7 +210,6 @@ class TaskListActivity : AppCompatActivity() {
                     return@setPositiveButton
                 }
 
-                // Tentukan apakah akan menambah tugas baru atau memperbarui yang sudah ada.
                 if (isEditMode) {
                     updateTask(task!!, taskTitle, taskNotes, reminderTime, recurrence)
                 } else {
@@ -218,51 +220,36 @@ class TaskListActivity : AppCompatActivity() {
             .show()
     }
 
-    // Fungsi untuk menambah tugas baru ke Firestore.
+    // Menambahkan tugas baru ke Firestore
     private fun addTask(title: String, notes: String, reminderTime: Timestamp?, recurrence: String) {
-        // Dapatkan ID pengguna (keluarga) yang sedang login.
         val familyId = auth.currentUser?.uid ?: return
-        // Siapkan data tugas yang akan disimpan.
         val newTask = hashMapOf(
-            "title" to title, "notes" to notes, "createdBy" to familyId, "assignedTo" to elderlyId!!,
-            "status" to "pending", "createdAt" to FieldValue.serverTimestamp(),
-            "reminderTime" to reminderTime, "recurrence" to recurrence
+            "title" to title,
+            "notes" to notes,
+            "createdBy" to familyId,
+            "assignedTo" to elderlyId!!,
+            "status" to "pending",
+            "createdAt" to FieldValue.serverTimestamp(),
+            "reminderTime" to reminderTime,
+            "recurrence" to recurrence
         )
-        // Simpan data ke Firestore.
         db.collection("users").document(elderlyId!!).collection("tasks").add(newTask)
-            .addOnSuccessListener { docRef ->
-                // DIHAPUS: Penjadwalan alarm dari sini salah.
-                // Logika alarm dipindahkan ke ElderlyDashboardActivity agar alarm
-                // disetel di perangkat yang benar (perangkat lansia).
-                // if (reminderTime != null) {
-                //     val createdTask = Task(id = docRef.id, title = title, notes = notes, reminderTime = reminderTime, recurrence = recurrence)
-                //     alarmScheduler.schedule(createdTask)
-                // }
-            }
     }
 
-    // Fungsi untuk memperbarui tugas yang ada di Firestore.
+    // Memperbarui tugas lama di Firestore
     private fun updateTask(task: Task, title: String, notes: String, newReminderTime: Timestamp?, newRecurrence: String) {
         val taskRef = db.collection("users").document(elderlyId!!).collection("tasks").document(task.id)
-        val updatedData = mapOf("title" to title, "notes" to notes, "reminderTime" to newReminderTime, "recurrence" to newRecurrence)
+        val updatedData = mapOf(
+            "title" to title,
+            "notes" to notes,
+            "reminderTime" to newReminderTime,
+            "recurrence" to newRecurrence
+        )
         taskRef.update(updatedData)
-            .addOnSuccessListener {
-                // DIHAPUS: Logika pembatalan dan penjadwalan ulang alarm juga dipindahkan
-                // ke ElderlyDashboardActivity untuk menjaga konsistensi.
-                // alarmScheduler.cancel(task)
-                // if (newReminderTime != null) {
-                //     val updatedTask = task.copy(title = title, notes = notes, reminderTime = newReminderTime, recurrence = newRecurrence)
-                //     alarmScheduler.schedule(updatedTask)
-                // }
-            }
     }
 
-    // Fungsi untuk menghapus tugas.
+    // Menghapus tugas dari Firestore
     private fun deleteTask(task: Task) {
-        // DIHAPUS: Pembatalan alarm juga seharusnya terjadi di sisi lansia saat
-        // data tugas hilang dari daftar mereka. Ini untuk memastikan semua logika alarm
-        // ada di satu tempat.
-        // alarmScheduler.cancel(task)
         db.collection("users").document(elderlyId!!).collection("tasks").document(task.id).delete()
     }
 }

@@ -9,24 +9,27 @@ import com.google.firebase.messaging.RemoteMessage
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
-    // Fungsi ini akan dipanggil saat aplikasi mendapatkan token baru dari Firebase
+    // fungsi ini dipanggil saat FCM memberikan token baru untuk device ini
+    // token ini unik dan dipakai untuk kirim notifikasi ke device tertentu
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.d("FCM_TOKEN", "Refreshed token: $token")
-        // Di aplikasi nyata, Anda akan mengirim token ini ke server Anda.
-        // Kita akan melakukannya di halaman login.
+        // token ini biasanya dikirim ke server agar bisa dipakai untuk kirim notifikasi
+        // untuk aplikasi ini, pengiriman token ke Firestore dilakukan saat login
     }
 
-    // Fungsi ini akan dipanggil saat ada push notification masuk KETIKA APLIKASI SEDANG DIBUKA
+    // fungsi ini akan dipanggil saat device menerima push notification
+    // khususnya ketika aplikasi sedang aktif (foreground)
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
         Log.d("FCM_MESSAGE", "From: ${remoteMessage.from}")
 
-        // Cek apakah notifikasi punya data
+        // cek apakah pesan notifikasi punya isi
         remoteMessage.notification?.let {
             Log.d("FCM_MESSAGE", "Notification Message Body: ${it.body}")
-            // Di sini Anda bisa menampilkan dialog atau notifikasi custom jika aplikasi sedang dibuka
+            // di sini bisa tambahkan logika untuk munculkan notifikasi custom
+            // misalnya pakai NotificationManager atau tampilkan dialog
         }
     }
 }
