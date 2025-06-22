@@ -23,6 +23,7 @@ class TaskAdapter(
     class TaskViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val ivTaskIcon: ImageView = itemView.findViewById(R.id.iv_task_icon)
         val tvTaskTitle: TextView = itemView.findViewById(R.id.tv_task_title)
+        val tvTaskNotes: TextView = itemView.findViewById(R.id.tv_task_notes)
         val tvTaskStatus: TextView = itemView.findViewById(R.id.tv_task_status)
         val cbTaskDone: CheckBox = itemView.findViewById(R.id.cb_task_done)
         val ivEditTask: ImageButton = itemView.findViewById(R.id.iv_edit_task)
@@ -35,11 +36,23 @@ class TaskAdapter(
         return TaskViewHolder(view)
     }
 
+    // FUNGSI onBindViewHolder YANG SUDAH DIGABUNG DAN DIPERBAIKI
     override fun onBindViewHolder(holder: TaskViewHolder, position: Int) {
         val task = tasks[position]
+
+        // Mengatur teks judul dan status
         holder.tvTaskTitle.text = task.title
         holder.tvTaskStatus.text = "Status: ${task.status}"
 
+        // Menampilkan catatan jika ada
+        if (task.notes.isNotEmpty()) {
+            holder.tvTaskNotes.text = task.notes
+            holder.tvTaskNotes.visibility = View.VISIBLE
+        } else {
+            holder.tvTaskNotes.visibility = View.GONE
+        }
+
+        // Memilih ikon berdasarkan judul tugas
         val taskTitleLower = task.title.lowercase(Locale.ROOT)
         val iconResId = when {
             "obat" in taskTitleLower -> R.drawable.ic_task_medication
@@ -50,6 +63,7 @@ class TaskAdapter(
         }
         holder.ivTaskIcon.setImageResource(iconResId)
 
+        // Menampilkan waktu pengingat jika ada
         task.reminderTime?.let { timestamp ->
             val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
             holder.tvTaskReminderTime.text = "Pengingat: ${sdf.format(timestamp.toDate())}"
@@ -58,6 +72,7 @@ class TaskAdapter(
             holder.tvTaskReminderTime.visibility = View.GONE
         }
 
+        // Mengatur visibilitas tombol berdasarkan peran pengguna
         if (userRole == "family") {
             holder.cbTaskDone.visibility = View.GONE
             holder.ivEditTask.visibility = View.VISIBLE
@@ -66,12 +81,14 @@ class TaskAdapter(
             holder.cbTaskDone.visibility = View.VISIBLE
             holder.ivEditTask.visibility = View.GONE
             holder.ivDeleteTask.visibility = View.GONE
+            // Memperbesar font untuk lansia
             holder.tvTaskTitle.textSize = 20f
             holder.tvTaskReminderTime.textSize = 16f
             holder.tvTaskStatus.textSize = 16f
             holder.cbTaskDone.textSize = 18f
         }
 
+        // Memberikan efek coretan jika tugas sudah selesai
         if (task.status == "completed") {
             holder.tvTaskTitle.paintFlags = holder.tvTaskTitle.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
             holder.tvTaskTitle.alpha = 0.5f
@@ -80,17 +97,13 @@ class TaskAdapter(
             holder.tvTaskTitle.alpha = 1.0f
         }
 
+        // Mengatur status checkbox
         holder.cbTaskDone.isChecked = task.status == "completed"
 
+        // Mengatur semua listener
         holder.ivEditTask.setOnClickListener { onEditClick(task) }
         holder.ivDeleteTask.setOnClickListener { onDeleteClick(task) }
-
-        // DIUBAH: Logika Checkbox disederhanakan
-        holder.cbTaskDone.setOnClickListener {
-            // Jangan ubah status di sini. Cukup teruskan event klik ke Activity.
-            // Activity akan memutuskan apakah status boleh diubah atau tidak.
-            onItemClick(task)
-        }
+        holder.cbTaskDone.setOnClickListener { onItemClick(task) }
     }
 
     override fun getItemCount(): Int = tasks.size

@@ -2,11 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
 
     <application
-        android:name=".SmartCareApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -16,25 +17,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartCare"
         tools:targetApi="31">
-        <activity
-            android:name=".TaskListActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".SplashActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <receiver
-            android:name=".AlarmReceiver"
-            android:enabled="true" />
+        <receiver android:name=".AlarmReceiver" android:enabled="true" android:exported="false"/>
 
         <service
             android:name=".MyFirebaseMessagingService"
@@ -45,6 +29,14 @@
         </service>
 
         <activity
+            android:name=".SplashActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".GetStartedActivity"
             android:exported="false" />
         <activity
@@ -54,15 +46,19 @@
             android:name=".RegisterActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
-            android:exported="false" />
-        <activity
             android:name=".FamilyDashboardActivity"
             android:exported="false" />
         <activity
             android:name=".ElderlyDashboardActivity"
             android:exported="false"
-            android:launchMode="singleTop" />
+            android:launchMode="singleTop"/>
+        <activity
+            android:name=".TaskListActivity"
+            android:exported="false"/>
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false"/>
+
     </application>
 
 </manifest>

@@ -4,33 +4,77 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
 class SplashActivity : AppCompatActivity() {
 
-    private val SPLASH_TIME_OUT: Long = 2000 // Durasi splash screen dalam milidetik (2 detik)
+    private val splashTimeOut: Long = 2000 // 2 detik
+    private lateinit var auth: FirebaseAuth
+    private val db = Firebase.firestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            // Cek apakah pengguna sudah login sebelumnya
-            val currentUser = Firebase.auth.currentUser
-            if (currentUser != null) {
-                // Jika sudah login, arahkan langsung ke dasbor.
-                // Idealnya, kita harus memeriksa peran pengguna (Keluarga/Lansia) dari Firestore.
-                // Untuk saat ini, kita arahkan ke FamilyDashboardActivity sebagai default.
-                startActivity(Intent(this, FamilyDashboardActivity::class.java))
-            } else {
-                // Jika belum login, arahkan ke halaman Get Started
-                startActivity(Intent(this, GetStartedActivity::class.java))
-            }
+        auth = Firebase.auth
 
-            // Tutup SplashActivity agar pengguna tidak bisa kembali ke sini dengan tombol "back"
+        Handler(Looper.getMainLooper()).postDelayed({
+            checkUserSession()
+        }, splashTimeOut)
+    }
+
+    private fun checkUserSession() {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            // Jika ada pengguna yang sudah login, periksa perannya
+            checkUserRoleAndRedirect(currentUser.uid)
+        } else {
+            // Jika tidak ada yang login, arahkan ke halaman Get Started
+            startActivity(Intent(this, GetStartedActivity::class.java))
             finish()
-        }, SPLASH_TIME_OUT)
+        }
+    }
+
+    private fun checkUserRoleAndRedirect(uid: String) {
+        db.collection("users").document(uid).get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    val role = document.getString("role")
+                    val intent = when (role) {
+                        "keluarga" -> Intent(this, FamilyDashboardActivity::class.java)
+                        "lansia" -> Intent(this, ElderlyDashboardActivity::class.java)
+                        else -> null // Peran tidak diketahui
+                    }
+
+                    if (intent != null) {
+                        startActivity(intent)
+                        finish()
+                    } else {
+                        // Jika peran tidak ada atau tidak valid, logout dan ke halaman login
+                        Toast.makeText(this, "Peran pengguna tidak dikenali.", Toast.LENGTH_SHORT).show()
+                        logoutAndGoToLogin()
+                    }
+                } else {
+                    // Jika data tidak ada di firestore (kasus anomali)
+                    Toast.makeText(this, "Data pengguna tidak ditemukan.", Toast.LENGTH_SHORT).show()
+                    logoutAndGoToLogin()
+                }
+            }
+            .addOnFailureListener {
+                // Jika gagal mengambil data dari firestore
+                Toast.makeText(this, "Gagal memverifikasi sesi.", Toast.LENGTH_SHORT).show()
+                logoutAndGoToLogin()
+            }
+    }
+
+    private fun logoutAndGoToLogin() {
+        auth.signOut()
+        startActivity(Intent(this, LoginActivity::class.java))
+        finishAffinity()
     }
 }

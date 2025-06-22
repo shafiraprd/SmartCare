@@ -4,11 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="8dp"
-    android:layout_marginTop="4dp"
-    android:layout_marginEnd="8dp"
-    android:layout_marginBottom="4dp"
-    app:cardCornerRadius="8dp"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="6dp"
+    app:cardCornerRadius="12dp"
     app:cardElevation="2dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -22,8 +20,7 @@
             android:layout_height="40dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            tools:src="@drawable/ic_task_default" />
+            tools:src="@drawable/ic_task_medication" />
 
         <TextView
             android:id="@+id/tv_task_title"
@@ -34,72 +31,72 @@
             android:textColor="@android:color/black"
             android:textSize="18sp"
             android:textStyle="bold"
-            app:layout_constraintStart_toEndOf="@id/iv_task_icon"
-            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toStartOf="@id/iv_edit_task"
-            android:layout_marginEnd="16dp"/>
+            app:layout_constraintStart_toEndOf="@id/iv_task_icon"
+            app:layout_constraintTop_toTopOf="@id/iv_task_icon"
+            app:layout_constraintBottom_toTopOf="@id/tv_task_notes" />
+
+        <TextView
+            android:id="@+id/tv_task_notes"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            tools:text="Ini adalah catatan tambahan untuk tugas yang harus dilakukan."
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="@id/tv_task_title"
+            app:layout_constraintStart_toStartOf="@id/tv_task_title"
+            app:layout_constraintTop_toBottomOf="@id/tv_task_title" />
 
         <TextView
             android:id="@+id/tv_task_reminder_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="8dp"
             android:drawablePadding="4dp"
-            android:gravity="center_vertical"
-            android:text="Pengingat: 08:00"
-            android:textColor="@color/design_default_color_primary"
-            android:textSize="14sp"
-            android:textStyle="italic"
-            android:visibility="gone"
-            app:drawableStartCompat="@android:drawable/ic_lock_idle_alarm"
+            tools:text="10:00"
+            app:drawableStartCompat="@drawable/ic_notification"
             app:layout_constraintStart_toStartOf="@id/tv_task_title"
-            app:layout_constraintTop_toBottomOf="@id/tv_task_title" />
+            app:layout_constraintTop_toBottomOf="@id/tv_task_notes" />
 
         <TextView
             android:id="@+id/tv_task_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Status: Pending"
-            android:textSize="14sp"
-            android:layout_marginTop="4dp"
-            app:layout_constraintStart_toStartOf="@id/tv_task_title"
-            app:layout_constraintTop_toBottomOf="@id/tv_task_reminder_time" />
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:textColor="@android:color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Akan Datang" />
 
         <CheckBox
             android:id="@+id/cb_task_done"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Selesai"
+            android:text="Selesaikan"
             android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
         <ImageButton
             android:id="@+id/iv_edit_task"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_menu_edit"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Edit Tugas"
-            android:visibility="gone"
-            android:layout_marginEnd="8dp"
+            android:src="@android:drawable/ic_menu_edit"
             app:layout_constraintEnd_toStartOf="@id/iv_delete_task"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:tint="?attr/colorPrimary"/>
 
         <ImageButton
             android:id="@+id/iv_delete_task"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_menu_delete"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Hapus Tugas"
-            android:visibility="gone"
+            android:src="@android:drawable/ic_menu_delete"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:tint="@android:color/holo_red_dark"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-
 </com.google.android.material.card.MaterialCardView>
