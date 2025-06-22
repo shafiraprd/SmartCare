@@ -29,33 +29,30 @@ class FamilyDashboardActivity : AppCompatActivity() {
     private val db = Firebase.firestore
     private val auth = Firebase.auth
     private var elderlyId: String? = null
-    private lateinit var taskAdapter: TaskAdapter
-    private lateinit var alarmScheduler: AlarmScheduler
+    private lateinit var elderlyUserAdapter: ElderlyUserAdapter
+    private val elderlyUserList = mutableListOf<User>()
+    // taskAdapter dan alarmScheduler dipindahkan ke TaskListActivity
+    // Namun, kita butuh alarmScheduler di sini untuk deleteTask di masa depan jika diperlukan
+    // Untuk saat ini, kita sederhanakan dan hanya fokus pada logika yang ada
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityFamilyDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        alarmScheduler = AlarmScheduler(this)
         setSupportActionBar(binding.toolbar)
 
-        setupRecyclerView()
+        setupElderlyUserRecyclerView()
 
         val familyId = auth.currentUser?.uid
         if (familyId == null) {
             goToLogin()
             return
         }
-        checkConnectionStatus(familyId)
+        listenForConnectedElderly(familyId)
 
-        binding.fabAddTask.setOnClickListener {
-            if (elderlyId != null) {
-                showTaskDialog(null)
-            } else {
-                Toast.makeText(this, "Anda harus terhubung dengan lansia terlebih dahulu.", Toast.LENGTH_SHORT).show()
-                promptForElderlyCode()
-            }
+        binding.fabAddElderly.setOnClickListener {
+            promptToConnect()
         }
 
         binding.bottomNavView.setOnItemSelectedListener { item ->
@@ -63,7 +60,7 @@ class FamilyDashboardActivity : AppCompatActivity() {
                 R.id.navigation_tasks -> {
                     binding.tasksViewContainer.visibility = View.VISIBLE
                     binding.profileViewContainer.visibility = View.GONE
-                    supportActionBar?.title = "Dasbor Keluarga"
+                    supportActionBar?.title = "Pilih Lansia"
                     true
                 }
                 R.id.navigation_profile -> {
@@ -84,8 +81,6 @@ class FamilyDashboardActivity : AppCompatActivity() {
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             Toast.makeText(this, "Email untuk reset kata sandi telah dikirim.", Toast.LENGTH_LONG).show()
-                        } else {
-                            Toast.makeText(this, "Gagal mengirim email.", Toast.LENGTH_LONG).show()
                         }
                     }
             }
@@ -96,202 +91,122 @@ class FamilyDashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadProfileData() {
-        binding.tvProfileEmail.text = auth.currentUser?.email ?: "Tidak ditemukan"
-    }
-
-    private fun checkConnectionStatus(familyId: String) {
-        db.collection("users").document(familyId).get().addOnSuccessListener { document ->
-            val connectedId = document.getString("connectedElderlyId")
-            if (!connectedId.isNullOrEmpty()) {
-                elderlyId = connectedId
-                fetchElderlyInfo(connectedId)
-                listenForTaskUpdates(connectedId)
-            } else {
-                promptForElderlyCode()
+    private fun setupElderlyUserRecyclerView() {
+        elderlyUserAdapter = ElderlyUserAdapter(
+            elderlyUserList,
+            onItemClick = { user ->
+                val intent = Intent(this, TaskListActivity::class.java).apply {
+                    putExtra("ELDERLY_ID", user.uid)
+                    putExtra("ELDERLY_DISPLAY_NAME", if (user.name.isNotEmpty()) user.name else user.email)
+                }
+                startActivity(intent)
+            },
+            onDeleteClick = { user ->
+                showDeleteConnectionConfirmation(user)
             }
-        }
-    }
-
-    private fun fetchElderlyInfo(elderlyId: String) {
-        db.collection("users").document(elderlyId).get().addOnSuccessListener { document ->
-            binding.tvElderlyEmail.text = document.getString("email") ?: "Email lansia tidak ditemukan"
-        }
-    }
-
-    private fun setupRecyclerView() {
-        taskAdapter = TaskAdapter(
-            mutableListOf(), "family",
-            onItemClick = {},
-            onEditClick = { task -> showTaskDialog(task) },
-            onDeleteClick = { task -> deleteTask(task) }
         )
-        binding.rvTasks.adapter = taskAdapter
-        binding.rvTasks.layoutManager = LinearLayoutManager(this)
+        binding.rvElderlyUsers.adapter = elderlyUserAdapter
+        binding.rvElderlyUsers.layoutManager = LinearLayoutManager(this)
     }
 
-    private fun listenForTaskUpdates(elderlyId: String) {
-        db.collection("users").document(elderlyId).collection("tasks")
-            .orderBy("createdAt")
-            .addSnapshotListener { snapshots, e ->
-                if (e != null) { return@addSnapshotListener }
-                val tasks = snapshots?.toObjects(Task::class.java)?.mapIndexed { index, task ->
-                    task.apply { id = snapshots.documents[index].id }
-                } ?: emptyList()
-                taskAdapter.updateTasks(tasks)
+    private fun listenForConnectedElderly(familyId: String) {
+        db.collection("users").document(familyId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null || !snapshot.exists()) {
+                    return@addSnapshotListener
+                }
+
+                val connectedIds = snapshot.get("connectedElderlyIds") as? List<String>
+                val currentUsers = mutableListOf<User>()
+
+                if (connectedIds.isNullOrEmpty()) {
+                    elderlyUserAdapter.updateUsers(emptyList())
+                    return@addSnapshotListener
+                }
+
+                for (elderlyId in connectedIds) {
+                    db.collection("users").document(elderlyId).get().addOnSuccessListener { elderlyDoc ->
+                        val name = elderlyDoc.getString("name") ?: ""
+                        val email = elderlyDoc.getString("email") ?: "N/A"
+                        val user = User(uid = elderlyId, name = name, email = email, role = "lansia")
+
+                        currentUsers.removeAll { it.uid == user.uid }
+                        currentUsers.add(user)
+
+                        if (currentUsers.size == connectedIds.size) {
+                            elderlyUserAdapter.updateUsers(currentUsers)
+                        }
+                    }
+                }
             }
     }
 
-    private fun showTaskDialog(task: Task?) {
-        val isEditMode = task != null
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_task, null)
-        val categoryGroup = dialogView.findViewById<ChipGroup>(R.id.cg_task_category)
-        val otherTitleInput = dialogView.findViewById<EditText>(R.id.et_task_title_other)
-        val timePickerButton = dialogView.findViewById<Button>(R.id.btn_time_picker)
-        val tvSelectedTime = dialogView.findViewById<TextView>(R.id.tv_selected_time)
-        val recurrenceGroup = dialogView.findViewById<RadioGroup>(R.id.rg_recurrence)
-
-        categoryGroup.setOnCheckedStateChangeListener { _, checkedIds ->
-            otherTitleInput.visibility = if (checkedIds.contains(R.id.chip_other)) View.VISIBLE else View.GONE
-        }
-
-        var selectedHour: Int? = null
-        var selectedMinute: Int? = null
-
-        if (isEditMode && task != null) {
-            val prefilledChipId = when (task.title) {
-                "Minum Obat" -> R.id.chip_medication
-                "Makan" -> R.id.chip_eat
-                "Janji Temu Dokter" -> R.id.chip_doctor
-                "Aktivitas" -> R.id.chip_activity
-                else -> R.id.chip_other
-            }
-            categoryGroup.check(prefilledChipId)
-            if (prefilledChipId == R.id.chip_other) {
-                otherTitleInput.setText(task.title)
-            }
-        }
-
-        timePickerButton.setOnClickListener {
-            val calendar = Calendar.getInstance()
-            TimePickerDialog(this, { _, hourOfDay, minute ->
-                selectedHour = hourOfDay
-                selectedMinute = minute
-                tvSelectedTime.text = String.format("Pengingat: %02d:%02d", hourOfDay, minute)
-                tvSelectedTime.visibility = View.VISIBLE
-            }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true).show()
-        }
-
+    private fun showDeleteConnectionConfirmation(user: User) {
+        val displayName = if (user.name.isNotEmpty()) user.name else user.email
         AlertDialog.Builder(this)
-            .setTitle(if (isEditMode) "Edit Tugas" else "Tambah Tugas Baru")
-            .setView(dialogView)
-            .setPositiveButton(if (isEditMode) "Simpan" else "Tambah") { dialog, _ ->
-                val checkedChipId = categoryGroup.checkedChipId
-                val taskTitle = if (checkedChipId == View.NO_ID) ""
-                else if (checkedChipId == R.id.chip_other) otherTitleInput.text.toString().trim()
-                else dialogView.findViewById<Chip>(checkedChipId).text.toString()
-
-                if (taskTitle.isEmpty()) {
-                    Toast.makeText(this, "Pilih kategori atau isi judul tugas.", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
-                }
-
-                var reminderTime: Timestamp? = null
-                if (selectedHour != null && selectedMinute != null) {
-                    val calendar = Calendar.getInstance().apply {
-                        set(Calendar.HOUR_OF_DAY, selectedHour!!)
-                        set(Calendar.MINUTE, selectedMinute!!)
-                        set(Calendar.SECOND, 0)
-                    }
-                    if (calendar.timeInMillis < System.currentTimeMillis() && !isEditMode) {
-                        calendar.add(Calendar.DAY_OF_YEAR, 1)
-                    }
-                    reminderTime = Timestamp(calendar.time)
-                }
-
-                val selectedRecurrenceId = recurrenceGroup.checkedRadioButtonId
-                val recurrence = if (selectedRecurrenceId == R.id.rb_daily) "daily" else "none"
-
-                if (recurrence == "daily" && reminderTime == null) {
-                    Toast.makeText(this, "Tugas harian harus memiliki waktu pengingat.", Toast.LENGTH_LONG).show()
-                    return@setPositiveButton
-                }
-                if (isEditMode) {
-                    updateTask(task!!, taskTitle, reminderTime, recurrence)
-                } else {
-                    addTask(taskTitle, reminderTime, recurrence)
-                }
+            .setTitle("Hapus Koneksi")
+            .setMessage("Anda yakin ingin menghapus koneksi dengan $displayName?")
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setPositiveButton("HAPUS") { dialog, _ ->
+                deleteElderlyConnection(user)
                 dialog.dismiss()
             }
-            .setNegativeButton("Batal") { dialog, _ -> dialog.cancel() }
+            .setNegativeButton("Batal", null)
             .show()
     }
 
-    private fun addTask(taskTitle: String, reminderTime: Timestamp?, recurrence: String) {
+    private fun deleteElderlyConnection(user: User) {
         val familyId = auth.currentUser?.uid ?: return
-        if (elderlyId == null) { return }
-        val newTask = hashMapOf(
-            "title" to taskTitle, "createdBy" to familyId, "assignedTo" to elderlyId!!,
-            "status" to "pending", "createdAt" to FieldValue.serverTimestamp(),
-            "reminderTime" to reminderTime, "recurrence" to recurrence
-        )
-        db.collection("users").document(elderlyId!!).collection("tasks").add(newTask)
-            .addOnSuccessListener { docRef ->
-                if (reminderTime != null) {
-                    val createdTask = Task(id = docRef.id, title = taskTitle, reminderTime = reminderTime, recurrence = recurrence)
-                    alarmScheduler.schedule(createdTask)
-                }
-            }
-    }
-
-    private fun updateTask(task: Task, newTitle: String, newReminderTime: Timestamp?, newRecurrence: String) {
-        val taskRef = db.collection("users").document(elderlyId!!).collection("tasks").document(task.id)
-        val updatedData = mapOf("title" to newTitle, "reminderTime" to newReminderTime, "recurrence" to newRecurrence)
-        taskRef.update(updatedData)
+        db.collection("users").document(familyId)
+            .update("connectedElderlyIds", FieldValue.arrayRemove(user.uid))
             .addOnSuccessListener {
-                alarmScheduler.cancel(task)
-                if (newReminderTime != null) {
-                    val updatedTask = task.copy(title = newTitle, reminderTime = newReminderTime, recurrence = newRecurrence)
-                    alarmScheduler.schedule(updatedTask)
-                }
+                Toast.makeText(this, "Koneksi dengan ${user.name} telah dihapus.", Toast.LENGTH_SHORT).show()
             }
     }
 
-    private fun deleteTask(task: Task) {
-        alarmScheduler.cancel(task)
-        db.collection("users").document(elderlyId!!).collection("tasks").document(task.id).delete()
-    }
-
-    private fun promptForElderlyCode() {
+    private fun promptToConnect() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Hubungkan dengan Lansia")
-        builder.setMessage("Masukkan kode koneksi unik.")
+        builder.setMessage("Masukkan Email atau Kode Koneksi (User ID) milik pengguna lansia.")
         val input = EditText(this)
+        input.hint = "Email atau User ID"
         builder.setView(input)
         builder.setPositiveButton("Hubungkan") { dialog, _ ->
-            connectWithElderly(input.text.toString().trim())
+            val inputText = input.text.toString().trim()
+            if (inputText.isNotEmpty()) {
+                connectWithElderly(inputText)
+            }
             dialog.dismiss()
         }
-        builder.setNegativeButton("Batal") { dialog, _ -> dialog.cancel() }
+        builder.setNegativeButton("Batal", null)
         builder.show()
     }
 
-    private fun connectWithElderly(code: String) {
-        if (code.isEmpty()) return
-        db.collection("users").whereEqualTo("connectionCode", code).get()
+    private fun connectWithElderly(input: String) {
+        val isEmail = input.contains("@") && input.contains(".")
+        val query = if (isEmail) {
+            db.collection("users").whereEqualTo("email", input)
+        } else {
+            db.collection("users").whereEqualTo("connectionCode", input)
+        }
+        query.whereEqualTo("role", "lansia").get()
             .addOnSuccessListener { documents ->
                 if (documents.isEmpty) {
-                    Toast.makeText(this, "Kode tidak ditemukan.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Pengguna Lansia tidak ditemukan.", Toast.LENGTH_SHORT).show()
                 } else {
                     val foundElderlyId = documents.documents.first().id
                     val familyId = auth.currentUser?.uid!!
-                    db.collection("users").document(familyId).update("connectedElderlyId", foundElderlyId)
+                    db.collection("users").document(familyId)
+                        .update("connectedElderlyIds", FieldValue.arrayUnion(foundElderlyId))
                         .addOnSuccessListener {
-                            Toast.makeText(this, "Berhasil terhubung!", Toast.LENGTH_SHORT).show()
-                            checkConnectionStatus(familyId)
+                            Toast.makeText(this, "Lansia baru berhasil ditambahkan!", Toast.LENGTH_SHORT).show()
                         }
                 }
             }
+    }
+
+    private fun loadProfileData() {
+        binding.tvProfileEmail.text = auth.currentUser?.email ?: "Tidak ditemukan"
     }
 
     private fun logoutUser() {

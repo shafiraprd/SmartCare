@@ -1,40 +1,25 @@
 package com.example.smartcare
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
+import android.view.View
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.smartcare.databinding.ActivityElderlyDashboardBinding
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import java.util.Calendar
+import java.util.Date
 
 class ElderlyDashboardActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityElderlyDashboardBinding
     private val db = Firebase.firestore
+    private val auth = Firebase.auth
     private lateinit var taskAdapter: TaskAdapter
     private val tasksList = mutableListOf<Task>()
     private lateinit var alarmScheduler: AlarmScheduler
-
-    private val requestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-            if (isGranted) {
-                Toast.makeText(this, "Izin notifikasi diberikan.", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Aplikasi mungkin tidak dapat menampilkan pengingat tanpa izin notifikasi.", Toast.LENGTH_LONG).show()
-            }
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,143 +27,155 @@ class ElderlyDashboardActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         alarmScheduler = AlarmScheduler(this)
-
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.title = "Dasbor Lansia"
+        setSupportActionBar(binding.toolbarElderly)
 
         setupRecyclerView()
 
-        val userId = Firebase.auth.currentUser?.uid
-        if (userId != null) {
-            fetchConnectionCode(userId)
-            listenForTasks(userId)
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            goToLogin()
+            return
         }
 
-        askNotificationPermission()
-    }
+        fetchConnectionCode(userId)
+        listenForTaskUpdates(userId)
 
-    private fun askNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        // Listener untuk menu navigasi bawah
+        binding.bottomNavViewElderly.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.navigation_tasks -> {
+                    binding.tasksViewContainer.visibility = View.VISIBLE
+                    binding.profileViewContainer.visibility = View.GONE
+                    supportActionBar?.title = "Dasbor Tugas Anda"
+                    true
+                }
+                R.id.navigation_profile -> {
+                    binding.tasksViewContainer.visibility = View.GONE
+                    binding.profileViewContainer.visibility = View.VISIBLE
+                    supportActionBar?.title = "Profil"
+                    loadProfileData()
+                    true
+                }
+                else -> false
             }
         }
+
+        // Listener untuk tombol logout di dalam tampilan profil
+        binding.btnProfileLogout.setOnClickListener {
+            logoutUser()
+        }
     }
 
-    private fun fetchConnectionCode(userId: String) {
-        db.collection("users").document(userId).get().addOnSuccessListener { document ->
-            val connectionCode = document.getString("connectionCode")
-            if (connectionCode != null) {
-                binding.tvConnectionCode.text = connectionCode
-            } else {
-                val newCode = (1..6).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".random() }.joinToString("")
-                db.collection("users").document(userId).update("connectionCode", newCode)
-                    .addOnSuccessListener {
-                        binding.tvConnectionCode.text = newCode
-                    }
-            }
-        }
+    private fun loadProfileData() {
+        binding.tvProfileEmail.text = auth.currentUser?.email ?: "Tidak ditemukan"
     }
 
     private fun setupRecyclerView() {
         taskAdapter = TaskAdapter(
-            tasksList,
-            "elderly",
-            onItemClick = { task ->
-                updateTaskStatus(task)
-            },
-            onEditClick = { /* Tidak ada aksi edit untuk lansia */ },
-            onDeleteClick = { /* Tidak ada aksi hapus untuk lansia */ }
+            tasksList, "elderly",
+            onItemClick = { task -> handleTaskCompletion(task) },
+            onEditClick = {},
+            onDeleteClick = {}
         )
-        binding.rvTasks.layoutManager = LinearLayoutManager(this)
         binding.rvTasks.adapter = taskAdapter
+        binding.rvTasks.layoutManager = LinearLayoutManager(this)
     }
 
-    private fun listenForTasks(userId: String) {
+    private fun handleTaskCompletion(task: Task) {
+        val position = tasksList.indexOfFirst { it.id == task.id }
+        if (position == -1) return
+
+        if (task.status == "completed" || task.status == "missed") {
+            Toast.makeText(this, "Tugas ini sudah selesai atau terlewat.", Toast.LENGTH_SHORT).show()
+            taskAdapter.notifyItemChanged(position)
+            return
+        }
+
+        val reminder = task.reminderTime
+        if (reminder == null) {
+            updateTaskStatus(task, "completed")
+            return
+        }
+
+        val currentTime = Date().time
+        val reminderTime = reminder.toDate().time
+        val deadline = reminderTime + (15 * 60 * 1000)
+
+        if (currentTime < reminderTime) {
+            Toast.makeText(this, "Belum waktunya menyelesaikan tugas ini.", Toast.LENGTH_SHORT).show()
+            taskAdapter.notifyItemChanged(position)
+        } else if (currentTime > deadline) {
+            Toast.makeText(this, "Waktu untuk menyelesaikan tugas ini sudah lewat.", Toast.LENGTH_SHORT).show()
+            taskAdapter.notifyItemChanged(position)
+        } else {
+            updateTaskStatus(task, "completed")
+        }
+    }
+
+    private fun listenForTaskUpdates(userId: String) {
         db.collection("users").document(userId).collection("tasks")
             .orderBy("createdAt")
             .addSnapshotListener { snapshots, e ->
-                if (e != null) {
-                    Toast.makeText(this, "Gagal memuat tugas.", Toast.LENGTH_SHORT).show()
-                    return@addSnapshotListener
-                }
-
-                tasksList.clear()
-                for (doc in snapshots!!) {
-                    val task = doc.toObject(Task::class.java)
-                    task.id = doc.id
-                    tasksList.add(task)
-                }
-                taskAdapter.notifyDataSetChanged()
+                if (e != null) { return@addSnapshotListener }
+                val tasks = snapshots?.toObjects(Task::class.java)?.mapIndexed { index, task ->
+                    task.apply { id = snapshots.documents[index].id }
+                } ?: emptyList()
+                checkForMissedTasks(tasks, userId)
             }
     }
 
-    private fun updateTaskStatus(task: Task) {
-        val userId = Firebase.auth.currentUser?.uid ?: return
-        val taskRef = db.collection("users").document(userId).collection("tasks").document(task.id)
-
-        // Cek apakah tugas ini adalah tugas harian dan sedang diselesaikan
-        if (task.recurrence == "daily" && task.status == "completed") {
-            // Ini adalah tugas harian yang baru saja diselesaikan
-            val newReminderTime = task.reminderTime?.let {
-                val calendar = Calendar.getInstance()
-                calendar.time = it.toDate()
-                calendar.add(Calendar.DAY_OF_YEAR, 1) // Tambah 1 hari untuk jadwal besok
-                Timestamp(calendar.time)
-            }
-
-            // Update tugas: reset status ke "pending" dan atur waktu pengingat baru
-            taskRef.update(
-                mapOf(
-                    "status" to "pending",
-                    "reminderTime" to newReminderTime
-                )
-            ).addOnSuccessListener {
-                // Jadwalkan ulang alarm untuk hari berikutnya
-                if (newReminderTime != null) {
-                    val rescheduledTask = task.copy(reminderTime = newReminderTime)
-                    alarmScheduler.schedule(rescheduledTask)
+    private fun checkForMissedTasks(tasks: List<Task>, userId: String) {
+        val batch = db.batch()
+        val currentTime = Date().time
+        val tasksToUpdate = mutableListOf<Task>()
+        for (task in tasks) {
+            val reminder = task.reminderTime
+            if (task.status == "pending" && reminder != null) {
+                val deadline = reminder.toDate().time + (15 * 60 * 1000)
+                if (currentTime > deadline) {
+                    val taskRef = db.collection("users").document(userId).collection("tasks").document(task.id)
+                    batch.update(taskRef, "status", "missed")
+                    tasksToUpdate.add(task)
                 }
-                Toast.makeText(this, "Tugas dijadwalkan ulang untuk besok!", Toast.LENGTH_SHORT).show()
             }
-
+        }
+        if (tasksToUpdate.isNotEmpty()) {
+            batch.commit().addOnCompleteListener {
+                tasksToUpdate.forEach { alarmScheduler.cancel(it) }
+            }
         } else {
-            // Ini adalah tugas biasa (tidak berulang) atau tugas yang statusnya diubah kembali ke "pending"
-            taskRef.update("status", task.status)
-                .addOnSuccessListener {
-                    // Jika tugas yang punya alarm dibatalkan (tidak dicentang), batalkan juga alarmnya
-                    if (task.status == "pending") {
-                        alarmScheduler.cancel(task)
-                    }
-                }
-                .addOnFailureListener {
-                    Toast.makeText(this, "Gagal memperbarui status tugas.", Toast.LENGTH_SHORT).show()
-                }
+            taskAdapter.updateTasks(tasks)
         }
     }
 
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.main_menu, menu)
-        return true
+    private fun updateTaskStatus(task: Task, newStatus: String) {
+        val userId = auth.currentUser?.uid ?: return
+        db.collection("users").document(userId)
+            .collection("tasks").document(task.id)
+            .update("status", newStatus)
+            .addOnSuccessListener {
+                if (newStatus == "completed") {
+                    Toast.makeText(this, "Tugas selesai!", Toast.LENGTH_SHORT).show()
+                    alarmScheduler.cancel(task)
+                }
+            }
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_profile -> {
-                startActivity(Intent(this, ProfileActivity::class.java))
-                true
-            }
-            R.id.action_logout -> {
-                Firebase.auth.signOut()
-                Toast.makeText(this, "Logout berhasil", Toast.LENGTH_SHORT).show()
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+    private fun fetchConnectionCode(userId: String) {
+        db.collection("users").document(userId).get().addOnSuccessListener { document ->
+            binding.tvConnectionCode.text = document.getString("connectionCode") ?: "Kode belum dibuat"
         }
+    }
+
+    private fun logoutUser() {
+        auth.signOut()
+        goToLogin()
+    }
+
+    private fun goToLogin() {
+        startActivity(Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
     }
 }

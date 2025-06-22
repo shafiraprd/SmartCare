@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 class TaskAdapter(
-    private val tasks: MutableList<Task>,
+    private var tasks: MutableList<Task>,
     private val userRole: String,
     private val onItemClick: (Task) -> Unit,
     private val onEditClick: (Task) -> Unit,
@@ -62,7 +62,7 @@ class TaskAdapter(
             holder.cbTaskDone.visibility = View.GONE
             holder.ivEditTask.visibility = View.VISIBLE
             holder.ivDeleteTask.visibility = View.VISIBLE
-        } else {
+        } else { // elderly
             holder.cbTaskDone.visibility = View.VISIBLE
             holder.ivEditTask.visibility = View.GONE
             holder.ivDeleteTask.visibility = View.GONE
@@ -82,25 +82,19 @@ class TaskAdapter(
 
         holder.cbTaskDone.isChecked = task.status == "completed"
 
-        holder.itemView.setOnClickListener { onItemClick(task) }
         holder.ivEditTask.setOnClickListener { onEditClick(task) }
         holder.ivDeleteTask.setOnClickListener { onDeleteClick(task) }
 
-        holder.cbTaskDone.setOnCheckedChangeListener(null)
+        // DIUBAH: Logika Checkbox disederhanakan
         holder.cbTaskDone.setOnClickListener {
-            if (userRole == "elderly") {
-                val newStatus = if (holder.cbTaskDone.isChecked) "completed" else "pending"
-                if (task.status != newStatus) {
-                    task.status = newStatus
-                    onItemClick(task)
-                }
-            }
+            // Jangan ubah status di sini. Cukup teruskan event klik ke Activity.
+            // Activity akan memutuskan apakah status boleh diubah atau tidak.
+            onItemClick(task)
         }
     }
 
     override fun getItemCount(): Int = tasks.size
 
-    // BARU: Fungsi untuk memperbarui daftar tugas di adapter
     fun updateTasks(newTasks: List<Task>) {
         tasks.clear()
         tasks.addAll(newTasks)

@@ -3,6 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_add_elderly"
+        android:title="Tambah Lansia"
+        android:icon="@drawable/ic_add_person"
+        app:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/action_profile"
         android:title="Profil"
         app:showAsAction="never" />

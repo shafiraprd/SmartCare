@@ -21,13 +21,8 @@ class RegisterActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         auth = Firebase.auth
-
-        binding.btnRegister.setOnClickListener {
-            registerUser()
-        }
-
+        binding.btnRegister.setOnClickListener { registerUser() }
         binding.tvGoToLogin.setOnClickListener {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
@@ -35,51 +30,40 @@ class RegisterActivity : AppCompatActivity() {
     }
 
     private fun registerUser() {
+        val name = binding.etNameRegister.text.toString().trim()
         val email = binding.etEmailRegister.text.toString().trim()
         val password = binding.etPasswordRegister.text.toString().trim()
         val selectedRoleId = binding.radioGroupRoleRegister.checkedRadioButtonId
 
-        if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Email dan Password tidak boleh kosong.", Toast.LENGTH_SHORT).show()
+        if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "Nama, Email, dan Password tidak boleh kosong.", Toast.LENGTH_SHORT).show()
             return
         }
-
         if (selectedRoleId == -1) {
-            Toast.makeText(this, "Silakan pilih peran Anda (Keluarga/Lansia).", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Silakan pilih peran Anda.", Toast.LENGTH_SHORT).show()
             return
         }
-
         val role = findViewById<RadioButton>(selectedRoleId).text.toString().lowercase()
 
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    val firebaseUser = auth.currentUser
-                    val uid = firebaseUser?.uid
-
+                    val uid = auth.currentUser?.uid
                     if (uid != null) {
-                        // DIUBAH: Simpan lebih banyak informasi pengguna
                         val userProfile = hashMapOf(
+                            "name" to name,
                             "email" to email,
                             "role" to role
                         )
-
-                        // Jika yang mendaftar adalah lansia, langsung buatkan kode koneksi
                         if (role == "lansia") {
                             val newCode = (1..6).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".random() }.joinToString("")
                             userProfile["connectionCode"] = newCode
                         }
-
-                        db.collection("users").document(uid)
-                            .set(userProfile)
+                        db.collection("users").document(uid).set(userProfile)
                             .addOnSuccessListener {
                                 Toast.makeText(this, "Pendaftaran berhasil! Silakan login.", Toast.LENGTH_LONG).show()
-                                val intent = Intent(this, LoginActivity::class.java)
-                                startActivity(intent)
+                                startActivity(Intent(this, LoginActivity::class.java))
                                 finishAffinity()
-                            }
-                            .addOnFailureListener { e ->
-                                Toast.makeText(this, "Gagal menyimpan data peran: ${e.message}", Toast.LENGTH_LONG).show()
                             }
                     }
                 } else {
