@@ -2,6 +2,7 @@ package com.example.smartcare
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -10,6 +11,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.ktx.messaging
 
 class LoginActivity : AppCompatActivity() {
 
@@ -47,13 +49,11 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        // Ambil peran yang dipilih pengguna di layar
         val selectedRole = findViewById<RadioButton>(selectedRoleId).text.toString().lowercase()
 
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    // Jika otentikasi berhasil, lanjutkan ke validasi peran
                     validateUserRole(selectedRole)
                 } else {
                     Toast.makeText(this, "Login Gagal: Email atau Password Salah.", Toast.LENGTH_LONG).show()
@@ -69,9 +69,26 @@ class LoginActivity : AppCompatActivity() {
                 if (document != null && document.exists()) {
                     val databaseRole = document.getString("role")
 
-                    // --- INTI LOGIKA BARU ADA DI SINI ---
                     if (databaseRole == selectedRole) {
-                        // Jika peran yang dipilih di layar SAMA DENGAN peran di database
+                        // --- KODE BARU DITAMBAHKAN DI SINI ---
+                        // Mengambil dan menyimpan FCM Token ke Firestore setelah login berhasil
+                        Firebase.messaging.token.addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                val token = task.result
+                                db.collection("users").document(uid)
+                                    .update("fcmToken", token)
+                                    .addOnSuccessListener {
+                                        Log.d("FCM_TOKEN", "FCM Token berhasil diperbarui untuk user $uid")
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Log.w("FCM_TOKEN", "Gagal memperbarui FCM Token untuk user $uid", e)
+                                    }
+                            } else {
+                                Log.w("FCM_TOKEN", "Gagal mengambil FCM registration token", task.exception)
+                            }
+                        }
+                        // --- AKHIR DARI KODE TAMBAHAN ---
+
                         val intent = when (databaseRole) {
                             "keluarga" -> Intent(this, FamilyDashboardActivity::class.java)
                             "lansia" -> Intent(this, ElderlyDashboardActivity::class.java)
@@ -86,9 +103,8 @@ class LoginActivity : AppCompatActivity() {
                             auth.signOut()
                         }
                     } else {
-                        // Jika peran yang dipilih TIDAK COCOK dengan yang ada di database
                         Toast.makeText(this, "Login gagal. Akun ini terdaftar sebagai '$databaseRole', bukan '$selectedRole'.", Toast.LENGTH_LONG).show()
-                        auth.signOut() // Logout paksa karena peran tidak cocok
+                        auth.signOut()
                     }
                 } else {
                     Toast.makeText(this, "Data profil pengguna tidak ditemukan.", Toast.LENGTH_SHORT).show()
@@ -100,8 +116,4 @@ class LoginActivity : AppCompatActivity() {
                 auth.signOut()
             }
     }
-
-    // Fungsi onStart tidak perlu diubah, karena ia akan memanggil validateUserRole
-    // yang akan menangani pengalihan ke dasbor yang benar secara otomatis tanpa
-    // input dari radio button.
 }
