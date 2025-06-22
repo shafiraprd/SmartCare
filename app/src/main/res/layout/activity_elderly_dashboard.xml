@@ -48,7 +48,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Kode Koneksi Anda:"
+                            android:text="Kode Koneksi Anda (untuk keluarga):"
                             android:textSize="18sp"/>
                         <TextView
                             android:id="@+id/tv_connection_code"
@@ -115,13 +115,21 @@
                 android:layout_weight="1"/>
 
             <Button
+                android:id="@+id/btn_change_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ganti Kata Sandi"/>
+
+            <Button
                 android:id="@+id/btn_profile_logout"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:textColor="@android:color/holo_red_dark"
                 app:strokeColor="@android:color/holo_red_dark"
                 android:text="Logout"/>
+
         </LinearLayout>
 
     </FrameLayout>

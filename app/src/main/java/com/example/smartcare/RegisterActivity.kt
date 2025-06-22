@@ -55,13 +55,16 @@ class RegisterActivity : AppCompatActivity() {
                             "email" to email,
                             "role" to role
                         )
+                        // Buat kode koneksi unik HANYA jika perannya lansia
                         if (role == "lansia") {
                             val newCode = (1..6).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".random() }.joinToString("")
                             userProfile["connectionCode"] = newCode
                         }
+
                         db.collection("users").document(uid).set(userProfile)
                             .addOnSuccessListener {
                                 Toast.makeText(this, "Pendaftaran berhasil! Silakan login.", Toast.LENGTH_LONG).show()
+                                auth.signOut() // Langsung logout agar user harus login manual
                                 startActivity(Intent(this, LoginActivity::class.java))
                                 finishAffinity()
                             }

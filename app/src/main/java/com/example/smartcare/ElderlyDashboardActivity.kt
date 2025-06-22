@@ -27,7 +27,7 @@ class ElderlyDashboardActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         alarmScheduler = AlarmScheduler(this)
-        setSupportActionBar(binding.toolbarElderly)
+        setSupportActionBar(binding.toolbarElderly) // Menggunakan toolbar dari layout baru
 
         setupRecyclerView()
 
@@ -60,7 +60,21 @@ class ElderlyDashboardActivity : AppCompatActivity() {
             }
         }
 
-        // Listener untuk tombol logout di dalam tampilan profil
+        // Listener untuk tombol di dalam Tampilan Profil
+        binding.btnChangePassword.setOnClickListener {
+            val user = auth.currentUser
+            if (user?.email != null) {
+                auth.sendPasswordResetEmail(user.email!!)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            Toast.makeText(this, "Email untuk reset kata sandi telah dikirim.", Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(this, "Gagal mengirim email.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+            }
+        }
+
         binding.btnProfileLogout.setOnClickListener {
             logoutUser()
         }
@@ -128,6 +142,8 @@ class ElderlyDashboardActivity : AppCompatActivity() {
         val batch = db.batch()
         val currentTime = Date().time
         val tasksToUpdate = mutableListOf<Task>()
+        var needsUiUpdate = false
+
         for (task in tasks) {
             val reminder = task.reminderTime
             if (task.status == "pending" && reminder != null) {
@@ -136,10 +152,12 @@ class ElderlyDashboardActivity : AppCompatActivity() {
                     val taskRef = db.collection("users").document(userId).collection("tasks").document(task.id)
                     batch.update(taskRef, "status", "missed")
                     tasksToUpdate.add(task)
+                    needsUiUpdate = true
                 }
             }
         }
-        if (tasksToUpdate.isNotEmpty()) {
+
+        if (needsUiUpdate) {
             batch.commit().addOnCompleteListener {
                 tasksToUpdate.forEach { alarmScheduler.cancel(it) }
             }
@@ -155,7 +173,7 @@ class ElderlyDashboardActivity : AppCompatActivity() {
             .update("status", newStatus)
             .addOnSuccessListener {
                 if (newStatus == "completed") {
-                    Toast.makeText(this, "Tugas selesai!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Tugas '${task.title}' selesai!", Toast.LENGTH_SHORT).show()
                     alarmScheduler.cancel(task)
                 }
             }
@@ -178,4 +196,6 @@ class ElderlyDashboardActivity : AppCompatActivity() {
         })
         finish()
     }
+
+    // FUNGSI UNTUK MENU ATAS (onCreateOptionsMenu & onOptionsItemSelected) TELAH DIHAPUS
 }

@@ -2,6 +2,7 @@ package com.example.smartcare
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.RadioButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.smartcare.databinding.ActivityLoginBinding
@@ -34,72 +35,73 @@ class LoginActivity : AppCompatActivity() {
     private fun loginUser() {
         val email = binding.etEmail.text.toString().trim()
         val password = binding.etPassword.text.toString().trim()
+        val selectedRoleId = binding.radioGroupRoleLogin.checkedRadioButtonId
 
         if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Email dan Password tidak boleh kosong.", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Langkah 1: Otentikasi pengguna dengan email dan password
+        if (selectedRoleId == -1) {
+            Toast.makeText(this, "Silakan pilih peran login Anda (Keluarga/Lansia).", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Ambil peran yang dipilih pengguna di layar
+        val selectedRole = findViewById<RadioButton>(selectedRoleId).text.toString().lowercase()
+
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    // Jika otentikasi berhasil, lanjutkan ke pemeriksaan peran
-                    checkUserRole()
+                    // Jika otentikasi berhasil, lanjutkan ke validasi peran
+                    validateUserRole(selectedRole)
                 } else {
-                    // Jika otentikasi gagal
-                    Toast.makeText(this, "Login Gagal: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Login Gagal: Email atau Password Salah.", Toast.LENGTH_LONG).show()
                 }
             }
     }
 
-    private fun checkUserRole() {
+    private fun validateUserRole(selectedRole: String) {
         val uid = auth.currentUser?.uid ?: return
 
-        // Langkah 2: Ambil data pengguna dari Firestore untuk memeriksa perannya
-        db.collection("users").document(uid)
-            .get()
+        db.collection("users").document(uid).get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
-                    val role = document.getString("role")
+                    val databaseRole = document.getString("role")
 
-                    // Langkah 3: Arahkan ke halaman yang sesuai berdasarkan peran
-                    when (role) {
-                        "keluarga" -> {
-                            Toast.makeText(this, "Login sebagai Keluarga berhasil!", Toast.LENGTH_SHORT).show()
-                            startActivity(Intent(this, FamilyDashboardActivity::class.java))
+                    // --- INTI LOGIKA BARU ADA DI SINI ---
+                    if (databaseRole == selectedRole) {
+                        // Jika peran yang dipilih di layar SAMA DENGAN peran di database
+                        val intent = when (databaseRole) {
+                            "keluarga" -> Intent(this, FamilyDashboardActivity::class.java)
+                            "lansia" -> Intent(this, ElderlyDashboardActivity::class.java)
+                            else -> null
+                        }
+                        if (intent != null) {
+                            Toast.makeText(this, "Login Berhasil!", Toast.LENGTH_SHORT).show()
+                            startActivity(intent)
                             finishAffinity()
+                        } else {
+                            Toast.makeText(this, "Peran pengguna tidak valid.", Toast.LENGTH_SHORT).show()
+                            auth.signOut()
                         }
-                        "lansia" -> {
-                            Toast.makeText(this, "Login sebagai Lansia berhasil!", Toast.LENGTH_SHORT).show()
-                            startActivity(Intent(this, ElderlyDashboardActivity::class.java))
-                            finishAffinity()
-                        }
-                        else -> {
-                            // Jika peran tidak dikenali
-                            Toast.makeText(this, "Peran pengguna tidak dikenali.", Toast.LENGTH_SHORT).show()
-                            auth.signOut() // Logout pengguna
-                        }
+                    } else {
+                        // Jika peran yang dipilih TIDAK COCOK dengan yang ada di database
+                        Toast.makeText(this, "Login gagal. Akun ini terdaftar sebagai '$databaseRole', bukan '$selectedRole'.", Toast.LENGTH_LONG).show()
+                        auth.signOut() // Logout paksa karena peran tidak cocok
                     }
                 } else {
-                    // Jika dokumen pengguna tidak ditemukan di Firestore
-                    Toast.makeText(this, "Data pengguna tidak ditemukan.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Data profil pengguna tidak ditemukan.", Toast.LENGTH_SHORT).show()
                     auth.signOut()
                 }
             }
-            .addOnFailureListener { exception ->
-                // Jika gagal mengambil data dari Firestore
-                Toast.makeText(this, "Gagal mengambil data peran: ${exception.message}", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener {
+                Toast.makeText(this, "Gagal memverifikasi peran pengguna.", Toast.LENGTH_SHORT).show()
                 auth.signOut()
             }
     }
 
-    override fun onStart() {
-        super.onStart()
-        // Cek apakah pengguna sudah login sebelumnya
-        if (auth.currentUser != null) {
-            // Jika sudah, langsung periksa perannya tanpa perlu login ulang
-            checkUserRole()
-        }
-    }
+    // Fungsi onStart tidak perlu diubah, karena ia akan memanggil validateUserRole
+    // yang akan menangani pengalihan ke dasbor yang benar secara otomatis tanpa
+    // input dari radio button.
 }
